@@ -1,0 +1,47 @@
+import pygame
+import sys
+
+pygame.init()
+
+
+
+
+class Button:
+    def __init__(self, image, x_p, y_p, textinput, font, basicColor, changeColor, resulution):
+
+
+        self.bc = basicColor
+        self.cC = changeColor
+        self.xres, self.yres = resulution[0], resulution [1]
+        self.x_p = x_p
+        self.y_p = y_p
+
+        self.image = pygame.transform.scale(image, (self.xres, self.yres))
+
+        self.font = font
+
+        self.textinput = textinput
+        self.text = self.font.render(self.textinput, True, self.bc)
+        self.rect = self.image.get_rect(center=(self.x_p, self.y_p))
+
+        self.text_Rect = self.text.get_rect(center=(self.x_p, self.y_p))
+
+
+    def getFont(size):
+        return pygame.font.Font("font.ttf", size)  # Truetype Font
+
+    def update(self, Bild):
+        Bild.blit(self.image, self.rect)
+        Bild.blit(self.text, self.text_Rect)
+
+    def action(self, mausposition):
+        if mausposition[0] in range(self.rect.left, self.rect.right) and mausposition[1] in range(self.rect.top, self.rect.bottom):
+            return True
+        return False
+
+    def buttonfarbe(self, mausposition):
+        if mausposition[0] in range(self.rect.left, self.rect.right) and mausposition[1] in range(self.rect.top, self.rect.bottom):
+            self.text = self.font.render(self.textinput, True, self.bc)
+        else:
+            self.text = self.font.render(self.textinput, True, self.cC)
+
