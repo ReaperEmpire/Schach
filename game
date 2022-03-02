@@ -1,0 +1,32 @@
+import pygame
+import sys
+
+
+pygame.init()
+
+
+
+xres = 1280
+yres = 800
+buttonxres = 100
+buttonyres = 100
+
+Weiß = (255, 255, 255)
+Grün = (118, 238, 0)
+Schwarz = (0, 0, 0)
+
+
+class Game:
+    def __init__(self):
+        self.spielbrett = [
+            ["sT", "sS", "sL", "sQ", "sK", "sL", "sS", "sT"],
+            ["sB", "sB", "sB", "sB", "sB", "sB", "sB", "sB"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["wB", "wB", "wB", "wB", "wB", "wB", "wB", "wB"],
+            ["wT", "wS", "wL", "wQ", "wK", "wL", "wS", "wT"]]
+
+        self.weisZug = True
+        self.schwarzZug = False
