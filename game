@@ -1,10 +1,7 @@
 import pygame
 import sys
 
-
 pygame.init()
-
-
 
 xres = 1280
 yres = 800
@@ -29,4 +26,28 @@ class Game:
             ["wT", "wS", "wL", "wQ", "wK", "wL", "wS", "wT"]]
 
         self.weisZug = True
-        self.schwarzZug = False
+        self.moveLog = []
+
+    def Move(self, move):
+        self.figurBewegt=self.spielbrett[move.startZeile][move.startSpalte]
+        self.figurGeschlagen=self.spielbrett[move.endZeile][move.endSpalte]
+        self.spielbrett[move.endZeile][move.endSpalte] = self.spielbrett[move.startZeile][move.startSpalte]
+        self.spielbrett[move.startZeile][move.startSpalte] = "-"
+        self.weisZug = not self.weisZug
+
+class figurenBewegung():
+    def __init__(self, startBu, endBu, spielbrett):
+        self.startSpalte = startBu[0]
+        self.startZeile = startBu[1]
+        self.endSpalte = endBu[0]
+        self.endZeile = endBu[1]
+
+        self.figurBewegt = spielbrett[self.startZeile][self.startSpalte]
+        self.figurGeschlagen = spielbrett[self.endZeile][self.endSpalte]
+
+
+
+
+
+
+
