@@ -1,0 +1,163 @@
+import pygame
+import sys
+
+import pygame.color
+
+from button import Button
+from game import Game
+
+pygame.init()
+
+xres = 1200
+yres = 800
+
+buttonxres = 100
+buttonyres = 512
+
+Spielgröße = 8
+spielebutton = 60
+SPIELFIGUREN = {}
+
+Weiß = (255, 255, 255)
+Grün = (118, 238, 0)
+Schwarz = (0, 0, 0)
+BG = pygame.image.load("Chess_wine.jpg")
+BG = pygame.transform.scale(BG, (1200, 800))
+
+def figurenimages():
+    figuren = ["wB", "wL", "wQ", "wS", "wT", "sB", "sL", "sQ", "sS", "sT", "sK", "wK"]
+    for figur in figuren:
+        SPIELFIGUREN[figur] = pygame.transform.scale(pygame.image.load("Spielfiguren/"+figur+".png"), (spielebutton, spielebutton))
+
+def gamesaufbau(Bild, Spiel):
+    spielbrett(Bild)
+    spielfiguren(Bild, Spiel.spielbrett)
+
+def spielbrett(Bild):
+    farben = [pygame.Color("white"), pygame.Color("gray")]
+    for r in range(Spielgröße):
+        for c in range(Spielgröße):
+            farbe = farben[((r+c) % 2)]
+            pygame.draw.rect(Bild, farbe, pygame.Rect(c*spielebutton, r*spielebutton, spielebutton, spielebutton))
+
+
+def spielfiguren(Bild, Spielbrett):
+    for r in range(Spielgröße):
+        for c in range(Spielgröße):
+            figur = Spielbrett[r][c]
+            if figur != "-":
+                Bild.blit(SPIELFIGUREN[figur], pygame.Rect(c * spielebutton, r * spielebutton, spielebutton, spielebutton))
+
+def getFont(size):
+    return pygame.font.Font("font.ttf", size)  # Truetype Font
+
+
+def mainmenu(Bild, Spiel):
+    pygame.display.set_caption("Main Menu")
+    while True:
+        Bild.blit(BG, (0, 0))
+        mausposition = pygame.mouse.get_pos()
+
+        mainmenu_mainTEXT = getFont(50).render("Das ist das Hauptmenu", True, Weiß)
+        menutext_Rect = mainmenu_mainTEXT.get_rect(center=(xres / 2, yres / 6))
+
+        Spielemenü_Button = Button(image=pygame.image.load("Mate.png"), x_p=xres / 2, y_p=yres / 2, textinput="Spielemenü", font=getFont(10), basicColor=Weiß, changeColor=Grün, resulution = (160, 160))
+
+        Bild.blit(mainmenu_mainTEXT, menutext_Rect)
+
+        for button in [Spielemenü_Button]:
+            button.buttonfarbe(mausposition)
+            button.update(Bild=Bild)
+
+        for Eingabe in pygame.event.get():
+            if Eingabe.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if Eingabe.type == pygame.MOUSEBUTTONDOWN:
+                if Spielemenü_Button.action(mausposition):
+                    Spielemenu(Bild=Bild, Spiel=Spiel)
+                    break
+
+        pygame.display.update()
+
+
+
+def Spielemenu(Bild, Spiel):
+    pygame.display.set_caption("Spielemenu")
+    while True:
+        Bild.fill(Schwarz)
+
+        mausposition = pygame.mouse.get_pos()
+
+        spielemenu_TEXT = getFont(50).render("Das ist das Spielemenu", True, Weiß)
+        TEXT_Rect = spielemenu_TEXT.get_rect(center=(xres / 2, yres / 6))
+
+        Bild.blit(spielemenu_TEXT, TEXT_Rect)
+
+        ChaosChess_Button = Button(image=pygame.image.load("Chaos.jpg"), x_p=xres / 2 + 400, y_p=yres / 2, textinput="CC - ChaosChess", font=getFont(10), basicColor=Weiß, changeColor=Grün, resulution = (360, 360))
+        QueensChess_Button = Button(image=pygame.image.load("Queen.jpg"), x_p=xres / 2, y_p=yres / 2, textinput="QueensChess", font=getFont(10), basicColor=Weiß, changeColor=Grün, resulution = (360, 360))
+        TheFloorIsLava_Button = Button(image=pygame.image.load("Lava.jpg"), x_p=xres / 2 - 400, y_p=yres / 2, textinput="TheFloorIsLava", font=getFont(10), basicColor=Weiß, changeColor=Grün, resulution = (360, 360))
+
+        for button in [ChaosChess_Button, QueensChess_Button, TheFloorIsLava_Button]:
+            button.buttonfarbe(mausposition)
+            button.update(Bild=Bild)
+
+            for Eingabe in pygame.event.get():
+                if Eingabe.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
+                    if ChaosChess_Button.action(mausposition):
+                        ChaosChess(Bild, Spiel=Spiel)
+                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
+                    if QueensChess_Button.action(mausposition):
+                        QueensChess(Bild, Spiel=Spiel)
+                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
+                    if TheFloorIsLava_Button.action(mausposition):
+                        TheFloorIsLava(Bild, Spiel=Spiel)
+        pygame.display.update()
+
+
+
+def ChaosChess(Bild, Spiel):
+    pygame.display.set_caption("Spielemenu")
+    while True:
+
+        Bild.fill(Grün)
+        mausposition = pygame.mouse.get_pos()
+        gamesaufbau(Bild=Bild, Spiel=Spiel)
+        pygame.display.update()
+
+def QueensChess(Bild, Spiel):
+    pygame.display.set_caption("QueensChess")
+    figurenimages()
+    while True:
+        Bild.fill(Weiß)
+        mausposition = pygame.mouse.get_pos()
+
+        gamesaufbau(Bild=Bild, Spiel=Spiel)
+
+
+        pygame.display.update()
+
+def TheFloorIsLava(Bild, Spiel):
+    pygame.display.set_caption("Spielemenu")
+    while True:
+        Bild.fill(Grün)
+        mausposition = pygame.mouse.get_pos()
+        gamesaufbau(Bild=Bild, Spiel=Spiel)
+
+        pygame.display.update()
+
+
+
+
+def main():
+    pygame.init()
+    Bild = pygame.display.set_mode((xres, yres))
+    Spiel = Game()
+    figurenimages()
+    pygame.display.flip()
+    mainmenu(Bild=Bild, Spiel=Spiel)
+
+main()
