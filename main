@@ -129,13 +129,38 @@ def ChaosChess(Bild, Spiel):
         pygame.display.update()
 
 def QueensChess(Bild, Spiel):
+
     pygame.display.set_caption("QueensChess")
     figurenimages()
+    ausgewählterbutton = ()
+    spielerclick = []
+
     while True:
         Bild.fill(Weiß)
-        mausposition = pygame.mouse.get_pos()
-
         gamesaufbau(Bild=Bild, Spiel=Spiel)
+
+        for Eingabe in pygame.event.get():
+            if Eingabe.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if Eingabe.type == pygame.MOUSEBUTTONDOWN:
+                mausposition = pygame.mouse.get_pos()
+                zeile = mausposition[0] // spielebutton
+                spalte = mausposition[1] // spielebutton
+
+                if ausgewählterbutton == (zeile, spalte):
+                    ausgewählterbutton = ()
+                    spielerclick = []
+                else:
+                    ausgewählterbutton = (zeile, spalte)
+                    spielerclick.append(ausgewählterbutton)
+                if len(spielerclick) == 2:
+                    move = figurenBewegung(spielerclick[0], spielerclick[1], Spiel.spielbrett)
+                    Spiel.Move(move)
+                    ausgewählterbutton = ()
+                    spielerclick = []
+
+
 
 
         pygame.display.update()
