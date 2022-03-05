@@ -245,16 +245,6 @@ class Game:
                     moves.append(self.verfügbarerZug)
 
 
-'''
-        for z in range(len(self.spielbrett[r])):
-            self.startSpalte = r
-            self.startZeile = c
-            self.endSpalte = len(self.spielbrett)
-            self.endZeile = len(self.spielbrett)
-            self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
-            moves.append(self.verfügbarerZug)
-'''
-
 
 
 class figurenBewegung():
@@ -266,7 +256,7 @@ class figurenBewegung():
 
         self.figurBewegt = spielbrett[self.startZeile][self.startSpalte]
         self.figurGeschlagen = spielbrett[self.endZeile][self.endSpalte]
-        #spielbrett[self.endZeile][self.endSpalte] = spielbrett[self.startZeile][self.startSpalte]
+        spielbrett[self.endZeile][self.endSpalte] = spielbrett[self.startZeile][self.startSpalte]
         self.figurBewegungID = self.startZeile*1000 + self.startSpalte*100 + self.endZeile*10 + self.endSpalte
 
 
@@ -279,62 +269,6 @@ class figurenBewegung():
         if isinstance(other, figurenBewegung):
             return self.figurBewegungID == other.figurBewegungID
         return False
-
-
-
-
-
-
-
-
-
-pygame.init()
-
-xres = 1280
-yres = 800
-buttonxres = 100
-buttonyres = 100
-
-Weiß = (255, 255, 255)
-Grün = (118, 238, 0)
-Schwarz = (0, 0, 0)
-
-
-class Game:
-    def __init__(self):
-        self.spielbrett = [
-            ["sT", "sS", "sL", "sQ", "sK", "sL", "sS", "sT"],
-            ["sB", "sB", "sB", "sB", "sB", "sB", "sB", "sB"],
-            ["-", "-", "-", "-", "-", "-", "-", "-"],
-            ["-", "-", "-", "-", "-", "-", "-", "-"],
-            ["-", "-", "-", "-", "-", "-", "-", "-"],
-            ["-", "-", "-", "-", "-", "-", "-", "-"],
-            ["wB", "wB", "wB", "wB", "wB", "wB", "wB", "wB"],
-            ["wT", "wS", "wL", "wQ", "wK", "wL", "wS", "wT"]]
-
-        self.weisZug = True
-        self.moveLog = []
-
-    def Move(self, move):
-        self.figurBewegt=self.spielbrett[move.startZeile][move.startSpalte]
-        self.figurGeschlagen=self.spielbrett[move.endZeile][move.endSpalte]
-        self.spielbrett[move.endZeile][move.endSpalte] = self.spielbrett[move.startZeile][move.startSpalte]
-        self.spielbrett[move.startZeile][move.startSpalte] = "-"
-        self.weisZug = not self.weisZug
-
-class figurenBewegung():
-    def __init__(self, startBu, endBu, spielbrett):
-        self.startSpalte = startBu[0]
-        self.startZeile = startBu[1]
-        self.endSpalte = endBu[0]
-        self.endZeile = endBu[1]
-
-        self.figurBewegt = spielbrett[self.startZeile][self.startSpalte]
-        self.figurGeschlagen = spielbrett[self.endZeile][self.endSpalte]
-
-
-
-
 
 
 
