@@ -27,6 +27,293 @@ class Game:
 
         self.weisZug = True
         self.moveLog = []
+        self.schwarzeFiguren = ["sT", "sS", "sL", "sQ", "sK", "sB"]
+        self.weisseFiguren = ["wT", "wS", "wL", "wQ", "wK", "wB"]
+
+    def Move(self, move):
+        self.figurBewegt=self.spielbrett[move.startZeile][move.startSpalte]
+        self.figurGeschlagen=self.spielbrett[move.endZeile][move.endSpalte]
+        print(self.figurGeschlagen)
+        self.spielbrett[move.endZeile][move.endSpalte] = self.spielbrett[move.startZeile][move.startSpalte]
+        self.spielbrett[move.startZeile][move.startSpalte] = "-"
+
+        # Gewinnbedingung
+        if self.figurGeschlagen.__contains__('K'):
+            if self.weisZug:
+                print("Weiß hat gewonnen.")
+            else:
+                print("Schwarz hat gewonnen.")
+
+        self.weisZug = not self.weisZug
+        if self.weisZug:
+            print("Weiß ist am Zug.")
+        else:
+            print("Schwarz ist am Zug.")
+
+
+
+    def machbareZüge(self):
+        return self.verfügbareZüge()
+
+    def verfügbareZüge(self):
+        moves = []
+        for r in range(len(self.spielbrett)):
+            for c in range(len(self.spielbrett[r])):
+                color = self.spielbrett[r][c][0]
+                if(color == 'w' and self.weisZug) or (color == 's' and not self.weisZug):
+                    figur = self.spielbrett[r][c][1]
+                    if figur == "B":
+                        self.bauermoves(r, c, moves)
+                    if figur == "T":
+                        self.turmmoves(r, c, moves)
+                    if figur == "L":
+                        self.läufermoves(r, c, moves)
+                    if figur == "S":
+                        self.springermoves(r, c, moves)
+                    if figur == "Q":
+                        self.königinmoves(r, c, moves)
+                    if figur == "K":
+                        self.königmoves(r, c, moves)
+        return moves
+
+
+
+
+                    #if figur == "T":
+                    #    self.turmmoves(r, c, moves)
+
+    def bauermoves(self,r,c,moves):
+        if self.weisZug:
+            if r+1 in range(len(self.spielbrett[r])) and self.spielbrett[r-1][c] == "-":
+                self.startSpalte = r
+                self.startZeile = c
+                self.endSpalte = r - 1
+                self.endZeile = c
+                self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
+                moves.append(self.verfügbarerZug)
+            if r ==6:
+                self.startSpalte = r
+                self.startZeile = c
+                self.endSpalte = r-2
+                self.endZeile = c
+                self.verfügbarerZug = self.startSpalte*1000 + self.startZeile*100 + self.endSpalte*10 + self.endZeile
+                moves.append(self.verfügbarerZug)
+            if c+1 in range(len(self.spielbrett[r])) and self.spielbrett[r-1][c+1] != "-":
+                if self.spielbrett[r - 1][c - 1] not in self.weisseFiguren:
+                    self.startSpalte = r
+                    self.startZeile = c
+                    self.endSpalte = r - 1
+                    self.endZeile = c + 1
+                    self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
+                    moves.append(self.verfügbarerZug)
+            if c-1 in range(len(self.spielbrett[r])) and self.spielbrett[r - 1][c - 1] != "-":
+                if self.spielbrett[r - 1][c - 1] not in self.weisseFiguren:
+                    self.startSpalte = r
+                    self.startZeile = c
+                    self.endSpalte = r - 1
+                    self.endZeile = c - 1
+                    self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
+                    moves.append(self.verfügbarerZug)
+
+        if self.weisZug == False:
+            if r+1 in range(len(self.spielbrett[r])) and self.spielbrett[r+1][c] == "-":
+                self.startSpalte = r
+                self.startZeile = c
+                self.endSpalte = r + 1
+                self.endZeile = c
+                self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
+                moves.append(self.verfügbarerZug)
+            if r == 1 and self.spielbrett[r + 2][c] == "-":
+                self.startSpalte = r
+                self.startZeile = c
+                self.endSpalte = r +2
+                self.endZeile = c
+                self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
+                moves.append(self.verfügbarerZug)
+            if c+1 in range(len(self.spielbrett[r])) and self.spielbrett[r+1][c+1] != "-":
+                self.startSpalte = r
+                self.startZeile = c
+                self.endSpalte = r + 1
+                self.endZeile = c + 1
+                self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
+                moves.append(self.verfügbarerZug)
+            if c-1 in range(len(self.spielbrett[r])) and self.spielbrett[r+1][c-1] != "-":
+                self.startSpalte = r
+                self.startZeile = c
+                self.endSpalte = r + 1
+                self.endZeile = c - 1
+                self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
+                moves.append(self.verfügbarerZug)
+
+    def turmmoves(self,r,c,moves):
+
+        pos = ((0, 1), (1, 0), (0, -1), (-1, 0))
+        f = (1,2,3,4,5,6,7,8)
+        if self.weisZug:
+            self.gegnerfarbe = 's'
+        else:
+            self.gegnerfarbe = 'w'
+
+
+        for z in pos:
+            self.startSpalte = r
+            self.startZeile = c
+            for a in f:
+                self.endSpalte = z[0]*a+r
+                self.endZeile = z[1]*a+c
+                if self.endSpalte >= 8 or self.endZeile >= 8:
+                    break
+                else:
+                    if self.endSpalte < 0 or self.endZeile < 0:
+                        break
+                    else:
+                        if self.spielbrett[self.endSpalte][self.endZeile] == "-":
+                            self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
+                            moves.append(self.verfügbarerZug)
+                        elif self.spielbrett[self.endSpalte][self.endZeile][0] == self.gegnerfarbe:
+                            self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
+                            moves.append(self.verfügbarerZug)
+                            break
+                        else:
+                            break
+
+    def läufermoves(self, r, c, moves):
+
+            pos = ((1, 1), (-1, -1), (-1, 1), (1, -1))
+            f = (1, 2, 3, 4, 5, 6, 7, 8)
+            if self.weisZug:
+                self.gegnerfarbe = 's'
+            else:
+                self.gegnerfarbe = 'w'
+
+            for z in pos:
+                self.startSpalte = r
+                self.startZeile = c
+                for a in f:
+                    self.endSpalte = z[0] * a + r
+                    self.endZeile = z[1] * a + c
+                    if self.endSpalte >= 8 or self.endZeile >= 8:
+                        break
+                    else:
+                        if self.endSpalte < 0 or self.endZeile < 0:
+                            break
+                        else:
+                            if self.spielbrett[self.endSpalte][self.endZeile] == "-":
+                                self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
+                                moves.append(self.verfügbarerZug)
+                            elif self.spielbrett[self.endSpalte][self.endZeile][0] == self.gegnerfarbe:
+                                self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
+                                moves.append(self.verfügbarerZug)
+                                break
+                            else:
+                                break
+
+    def springermoves(self, r, c, moves):
+        pos = ((1, 2), (2, 1), (-1, 2), (2, -1), (2, -1), (1, -2), (-1, -2), (-2, -1), (-1, 2), (-2, 1))
+
+        if self.weisZug:
+            self.gegnerfarbe = 's'
+        else:
+            self.gegnerfarbe = 'w'
+
+        self.startSpalte = r
+        self.startZeile = c
+
+        for z in pos:
+
+            self.endSpalte = r + z[0]
+            self.endZeile = c + z[1]
+            if 0 <= self.endSpalte < 8 and 0 <= self.endZeile < 8:
+                self.spielbrett[self.endSpalte][self.endZeile][0] != self.gegnerfarbe
+                self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
+                moves.append(self.verfügbarerZug)
+
+    def königinmoves(self, r, c, moves):
+        self.läufermoves(r, c, moves)
+        self.turmmoves(r, c, moves)
+
+    def königmoves(self, r, c, moves):
+        pos = ((1, 1), (-1, -1), (-1, 1), (1, -1), (0, 1), (1, 0), (0, -1), (-1, 0))
+        self.startSpalte = r
+        self.startZeile = c
+        for z in pos:
+            self.endSpalte = z[0] + r
+            self.endZeile = z[1] + c
+            if 0 <= self.endSpalte < 8 and 0 <= self.endZeile < 8:
+                if self.spielbrett[self.endSpalte][self.endZeile][0][0] != self.spielbrett[r][c][0]:
+                    self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
+                    moves.append(self.verfügbarerZug)
+
+
+'''
+        for z in range(len(self.spielbrett[r])):
+            self.startSpalte = r
+            self.startZeile = c
+            self.endSpalte = len(self.spielbrett)
+            self.endZeile = len(self.spielbrett)
+            self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
+            moves.append(self.verfügbarerZug)
+'''
+
+
+
+class figurenBewegung():
+    def __init__(self, startBu, endBu, spielbrett):
+        self.startSpalte = startBu[0]
+        self.startZeile = startBu[1]
+        self.endSpalte = endBu[0]
+        self.endZeile = endBu[1]
+
+        self.figurBewegt = spielbrett[self.startZeile][self.startSpalte]
+        self.figurGeschlagen = spielbrett[self.endZeile][self.endSpalte]
+        #spielbrett[self.endZeile][self.endSpalte] = spielbrett[self.startZeile][self.startSpalte]
+        self.figurBewegungID = self.startZeile*1000 + self.startSpalte*100 + self.endZeile*10 + self.endSpalte
+
+
+        # ranksToRows = {"1": 7, "2":6, "3": 5, "4": 4, "5": 3, "6": 2, "7": 1, "8": 0}
+        # rowsToRanks = {v: k for k, v in ranksToRows.items()}
+        # filesToCols = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
+        # colsToFiles = {v: k for k, v in filesToCols.items()}
+
+    def __eq__(self, other):
+        if isinstance(other, figurenBewegung):
+            return self.figurBewegungID == other.figurBewegungID
+        return False
+
+
+
+
+
+
+
+
+
+pygame.init()
+
+xres = 1280
+yres = 800
+buttonxres = 100
+buttonyres = 100
+
+Weiß = (255, 255, 255)
+Grün = (118, 238, 0)
+Schwarz = (0, 0, 0)
+
+
+class Game:
+    def __init__(self):
+        self.spielbrett = [
+            ["sT", "sS", "sL", "sQ", "sK", "sL", "sS", "sT"],
+            ["sB", "sB", "sB", "sB", "sB", "sB", "sB", "sB"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["wB", "wB", "wB", "wB", "wB", "wB", "wB", "wB"],
+            ["wT", "wS", "wL", "wQ", "wK", "wL", "wS", "wT"]]
+
+        self.weisZug = True
+        self.moveLog = []
 
     def Move(self, move):
         self.figurBewegt=self.spielbrett[move.startZeile][move.startSpalte]
