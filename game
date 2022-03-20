@@ -115,18 +115,7 @@ class Game:
         else:
             print("Schwarz ist am Zug.")
             
-        self.moveLog.append(((move.startSpalte, move.startZeile), (move.endSpalte, move.endZeile)))
-        moveLogRect = pygame.Rect(xres, xres, moveLogxres, moveLogyres)
-        moveTexts = []
-        angezeigtproReihe = 1
-        abstand = 3
-        moveLogFont = pygame.font.SysFont("Arial", 12, False, False)
-        for i in range(0, len(moveTexts), angezeigtproReihe):
-            moveTexts = ""
-            for j in range(angezeigtproReihe):
-                if i + j < len(moveTexts[i+j]):
-                    textObjekt = (moveLogFont.render(moveTexts, True, pygame.color("weiß)")))
-                    textOrt = (abstand)
+   
 
 # Moves und die Validität
 
