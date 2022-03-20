@@ -1,6 +1,7 @@
 import pygame
 import sys
 import random
+from button import Button
 
 
 pygame.init()
@@ -27,13 +28,23 @@ class Game:
             ["wB", "wB", "wB", "wB", "wB", "wB", "wB", "wB"],
             ["wT", "wS", "wL", "wQ", "wK", "wL", "wS", "wT"]]
 
+        self.powerUpSpielbrett = [
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"]]
+
         self.weisZug = True
         self.moveLog = []
         self.schwarzeFiguren = ["sT", "sS", "sL", "sQ", "sK", "sB"]
         self.weisseFiguren = ["wT", "wS", "wL", "wQ", "wK", "wB"]
         self.powerUps = ["Pr", "Sn", "Ro", "Fs", "Rö"]
-
-        self.randomPowerUp = [0, 1, 2, 3]
+        self.runde = 1
+        self.randomPowerUp = [1, 2, 3, 4]
         self.randomListe = [0,1,2,3,4,5,6,7]
         self.powerUp1Weis = ""
         self.powerUp1Schwarz = ""
@@ -42,28 +53,36 @@ class Game:
         self.powerUp2Schwarz = ""
         self.powerUp2Status = False
 
+        self.auswahlgetroffen = True
 
 
     def Move(self, move):
         self.figurBewegt=self.spielbrett[move.startZeile][move.startSpalte]
         self.figurGeschlagen=self.spielbrett[move.endZeile][move.endSpalte]
+        self.moveLog.append(str(move.startZeile))
+        self.moveLog.append(str(move.startSpalte))
+        self.moveLog.append(str(move.endZeile))
+        self.moveLog.append(str(move.endSpalte))
         print(self.figurGeschlagen)
         if self.figurGeschlagen in self.schwarzeFiguren or self.figurGeschlagen in self.weisseFiguren:
             for z in range(len(self.spielbrett)):
                 for s in range(len(self.spielbrett[z])):
                     print("PowerUpSpawnt")
-                    print()
-                    print()
+
                     self.z = random.choice(self.randomListe)
                     self.s = random.choice(self.randomListe)
                     self.p = random.choice(self.randomPowerUp)
+
                     if self.spielbrett[self.z][self.s] == "-":
+                        print(self.z)
+                        print(self.s)
                         self.spielbrett[self.z][self.s] = self.powerUps[self.p]
                         break
-                    elif self.spielbrett[self.z][self.s] == "-":
-                        self.spielbrett[self.z][self.s] = self.powerUps[self.p]
                     break
                 break
+
+#PowerUp wird aufgesammelt und der jeweiligen Variable zugeordnet
+
         if self.figurGeschlagen in self.powerUps:
             if self.weisZug:
                 if self.powerUp1Weis != "":
@@ -98,9 +117,17 @@ class Game:
 
 
 
+
+
         # Hier wird die Startfigur letztendlich gesetzt
         self.spielbrett[move.endZeile][move.endSpalte] = self.spielbrett[move.startZeile][move.startSpalte]
         self.spielbrett[move.startZeile][move.startSpalte] = "-"
+
+        if self.spielbrett[move.endZeile][move.endSpalte][1] == "B" and move.endZeile == 7 or move.endZeile == 0:
+            self.auswahlgetroffen = False
+
+
+
 
         # Gewinnbedingung
         if self.figurGeschlagen.__contains__('K'):
@@ -114,8 +141,6 @@ class Game:
             print("Weiß ist am Zug.")
         else:
             print("Schwarz ist am Zug.")
-            
-   
 
 # Moves und die Validität
 
@@ -128,35 +153,39 @@ class Game:
             for c in range(len(self.spielbrett[r])):
                 color = self.spielbrett[r][c][0]
                 if(color == 'w' and self.weisZug) or (color == 's' and not self.weisZug):
-                    figur = self.spielbrett[r][c][1]
-                    # Hier wird das Snipe-PowerUp durchgeführt
-                    if self.powerUp1Status or self.powerUp2Status:
-                        print("PowerUpStatus Wurde abgefragt")
-                        if self.powerUp1Weis == "Sn":
-                            self.königinmoves(r,c,moves)
+                    if self.spielbrett[r][c] != "-":
+                        if self.spielbrett[r][c] in self.weisseFiguren or self.spielbrett[r][c] in self.schwarzeFiguren:
+                            figur = self.spielbrett[r][c][1]
+                            if figur == "B":
+                                self.bauermoves(r, c, moves)
+                            if figur == "T":
+                                self.turmmoves(r, c, moves)
+                            if figur == "L":
+                                self.läufermoves(r, c, moves)
+                            if figur == "S":
+                                self.springermoves(r, c, moves)
+                            if figur == "Q":
+                                self.königinmoves(r, c, moves)
+                            if figur == "K":
+                                self.königmoves(r, c, moves)
 
-                        if self.powerUp1Schwarz == "Sn":
-                            self.königinmoves(r, c, moves)
+                        # Hier wird das Snipe-PowerUp durchgeführt
+                        if self.powerUp1Status or self.powerUp2Status:
+                            if self.powerUp1Weis == "Sn":
+                                self.königinmoves(r, c, moves)
 
-                        if self.powerUp2Weis == "Sn":
-                            self.königinmoves(r,c,moves)
+                            if self.powerUp1Schwarz == "Sn":
+                                self.königinmoves(r, c, moves)
 
-                        if self.powerUp2Schwarz == "Sn":
-                            self.königinmoves(r, c, moves)
-                            #print("Wurde erreicht")
+                            if self.powerUp2Weis == "Sn":
+                                self.königinmoves(r, c, moves)
 
-                    if figur == "B":
-                        self.bauermoves(r, c, moves)
-                    if figur == "T":
-                        self.turmmoves(r, c, moves)
-                    if figur == "L":
-                        self.läufermoves(r, c, moves)
-                    if figur == "S":
-                        self.springermoves(r, c, moves)
-                    if figur == "Q":
-                        self.königinmoves(r, c, moves)
-                    if figur == "K":
-                        self.königmoves(r, c, moves)
+                            if self.powerUp2Schwarz == "Sn":
+                                self.königinmoves(r, c, moves)
+                                # print("Wurde erreicht")
+
+
+
 
 
 
@@ -199,7 +228,9 @@ class Game:
                     self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
                     moves.append(self.verfügbarerZug)
 
-        if self.weisZug == False:
+
+
+        if not self.weisZug:
             if r+1 in range(len(self.spielbrett[r])) and self.spielbrett[r+1][c] == "-":
                 self.startSpalte = r
                 self.startZeile = c
@@ -230,14 +261,12 @@ class Game:
                 moves.append(self.verfügbarerZug)
 
     def turmmoves(self,r,c,moves):
-
         pos = ((0, 1), (1, 0), (0, -1), (-1, 0))
         f = (1,2,3,4,5,6,7,8)
         if self.weisZug:
             self.gegnerfarbe = 's'
         else:
             self.gegnerfarbe = 'w'
-
 
         for z in pos:
             self.startSpalte = r
@@ -308,7 +337,7 @@ class Game:
             self.endSpalte = r + z[0]
             self.endZeile = c + z[1]
             if 0 <= self.endSpalte < 8 and 0 <= self.endZeile < 8:
-                if self.spielbrett[self.endSpalte][self.endZeile][0] != self.gegnerfarbe or self.spielbrett[self.endSpalte][self.endZeile] in self.powerUps:
+                if self.spielbrett[self.endSpalte][self.endZeile][0] == self.gegnerfarbe or self.spielbrett[self.endSpalte][self.endZeile] in self.powerUps or self.spielbrett[self.endSpalte][self.endZeile] == "-":
                     self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
                     moves.append(self.verfügbarerZug)
 
@@ -359,6 +388,8 @@ class figurenBewegung():
 
         self.figurBewegt = spielbrett[self.startZeile][self.startSpalte]
         self.figurGeschlagen = spielbrett[self.endZeile][self.endSpalte]
+
+
 
 
 
