@@ -1,10 +1,17 @@
 import sys
-
 import pygame
 import pygame.color
-
 from button import Button
 from game import *
+from client import client
+import socket
+
+Format = 'utf-8'
+Disconnect_ms = "Discon"
+Header = 64
+erstverbindung = True
+Server = "192.168.56.1"
+
 
 pygame.init()
 
@@ -14,13 +21,16 @@ yres = 800
 buttonxres = buttonyres = 100
 
 Black = (0, 0, 0)
+Blau = (20, 50, 155)
+Violet = (20, 50, 255)
 Spielgröße = 8
 spielebutton = buttonyres
 SPIELFIGUREN = {}
 Effekte = {}
+Pieces = {}
 randomListe = [0, 1, 2, 3, 4, 5, 6, 7]
 
-BG = pygame.image.load("Chess_wine.jpg")
+BG = pygame.image.load("Spielfiguren/Chess_wine.jpg")
 BG = pygame.transform.scale(BG, (1300, 800))
 
 
@@ -36,8 +46,10 @@ def figurenimages():
 
 def gamesaufbau(Bild, Spiel):
     spielbrett(Bild)
+
     spielfiguren(Bild, Spiel.spielbrett)
-    powerUpEffekte(Bild, Spiel.powerUpSpielbrett)
+
+    powerUpEffekte(Bild, Spielbrett=Spiel.powerUpSpielbrett)
     MoveLog(Bild, Spiel, font=getFont(10))
 
 def spielbrett(Bild):
@@ -45,12 +57,6 @@ def spielbrett(Bild):
     for r in range(Spielgröße):
         for c in range(Spielgröße):
             farbe = farben[((r + c) % 2)]
-
-
-
-
-
-
             pygame.draw.rect(Bild, farbe, pygame.Rect(c * spielebutton, r * spielebutton, spielebutton, spielebutton))
 
 def spielfiguren(Bild, Spielbrett):
@@ -79,35 +85,37 @@ def MoveLog(Bild, Spiel, font):
     a = 0
     b = 40
     c = 0
-    for i in range(len(moveLogText)):
-        text = (moveLogText[i])
-        textObj = font.render(text, True, pygame.Color("white"))
-        zwischenText = font.render("  nach", True, pygame.Color("white"))
+    if moveLog != "":
+        for i in range(len(moveLogText)):
+            text = (moveLogText[i])
+            textObj = font.render(text, True, pygame.Color("white"))
+            zwischenText = font.render("  nach", True, pygame.Color("white"))
 
+            textPos = (950 + b, 50 + a)
+            Bild.blit(textObj, textPos)
 
-        textPos = (950+b, 50+a)
-        Bild.blit(textObj, textPos)
+            c = c + 1
 
-        c = c+1
+            # Nach der 4 zahl soll ein Abstand kommen
+            if c == 4:
+                a += 20
+                c = 0
+                b = 40
+            # Zwischen jeder Zahl soll ein Abstand sein
+            if c >= 1:
+                b += 12
+            # Nach jeder zweiten zahl soll ein Abstand kommen
+            if c == 2:
+                b += 20
+                Bild.blit(zwischenText, textPos)
+                b += 40
 
-        # Nach der 4 zahl soll ein Abstand kommen
-        if c == 4:
-            a += 20
-            c = 0
-            b = 40
-        # Zwischen jeder Zahl soll ein Abstand sein
-        if c >= 1:
-            b += 12
-        # Nach jeder zweiten zahl soll ein Abstand kommen
-        if c == 2:
-            b += 20
-            Bild.blit(zwischenText, textPos)
-            b += 40
+def warteMenu(Bild, font):
+    LogRect = pygame.Rect(350, 100, 300, 300)
+    pygame.draw.rect(Bild, pygame.Color("black"), LogRect)
 
-        if Spiel.runde == 20:
-            for k in range(20):
-                Spiel.moveLog.remove(k)
-
+    Overlay = pygame.transform.scale(pygame.image.load("MoveLogOverlay.png"), (300, 300))
+    Bild.blit(Overlay, (350, 100))
 
 def getFont(size):
     return pygame.font.Font("font.ttf", size)  # Truetype Font
@@ -154,14 +162,14 @@ def Spielemenu(Bild, Spiel):
 
         Bild.blit(spielemenu_TEXT, TEXT_Rect)
 
-        ChaosChess_Button = Button(image=pygame.image.load("Chaos.jpg"), x_p=xres / 2 + 400, y_p=yres / 2,
-                                   textinput="CC - ChaosChess", font=getFont(10), basicColor=Weiß, changeColor=Grün,
+        ChaosChess_Button = Button(image=pygame.image.load("Spielfiguren/ChaosOverLay.jpg"), x_p=xres / 2 + 400, y_p=yres / 2,
+                                   textinput="CC - ChaosChess", font=getFont(20), basicColor=Blau, changeColor=Violet,
                                    resulution=(360, 360))
-        QueensChess_Button = Button(image=pygame.image.load("Queen.jpg"), x_p=xres / 2, y_p=yres / 2,
-                                    textinput="QueensChess", font=getFont(10), basicColor=Weiß, changeColor=Grün,
+        QueensChess_Button = Button(image=pygame.image.load("Spielfiguren/QueensChess.jpg"), x_p=xres / 2, y_p=yres / 2,
+                                    textinput="QueensChess", font=getFont(20), basicColor=Blau, changeColor=Violet,
                                     resulution=(360, 360))
-        TheFloorIsLava_Button = Button(image=pygame.image.load("Lava.jpg"), x_p=xres / 2 - 400, y_p=yres / 2,
-                                       textinput="TheFloorIsLava", font=getFont(10), basicColor=Weiß, changeColor=Grün,
+        TheFloorIsLava_Button = Button(image=pygame.image.load("Spielfiguren/LavaChess.jpg"), x_p=xres / 2 - 400, y_p=yres / 2,
+                                       textinput="TheFloorIsLava", font=getFont(20), basicColor=Blau, changeColor=Violet,
                                        resulution=(360, 360))
 
         for button in [ChaosChess_Button, QueensChess_Button, TheFloorIsLava_Button]:
@@ -183,139 +191,166 @@ def Spielemenu(Bild, Spiel):
                         TheFloorIsLava(Bild, Spiel=Spiel)
         pygame.display.update()
 
-def ChaosChess(Bild, Spiel):
-    pygame.display.set_caption("Spielemenu")
-    while True:
-        Bild.fill()
-        mausposition = pygame.mouse.get_pos()
-        gamesaufbau(Bild=Bild, Spiel=Spiel)
-        pygame.display.update()
-
-
-
 def BauerInFigur(Spiel, spielerclick, Bild, font):
+    for r in range(len(Spiel.spielbrett)):
+        for c in range(len(Spiel.spielbrett[r])):
+            if r == 0 or r == 7:
+                if Spiel.spielbrett[r][c] != "-" and Spiel.spielbrett[r][c][1] == "B":
+                    zeile = spielerclick[1]
+                    spalte = spielerclick[0]
 
-    zeile = spielerclick[1]
-    spalte = spielerclick[0]
+                    IngameMenu = pygame.Rect(380, 100, 440, 600)
 
-    IngameMenu = pygame.Rect(380, 100, 440, 600)
+                    textMenu = "InGame Menü"
+                    textZusatz = "Bauer-Umwandlung in:"
+                    textÜberschrift = font.render(textMenu, True, pygame.Color("white"))
+                    textUnterschrift = font.render(textZusatz, True, pygame.Color("white"))
 
+                    textPos = (545, 120)
 
-    textMenu = "InGame Menü"
-    textZusatz = "Bauer-Umwandlung in:"
-    textÜberschrift = font.render(textMenu, True, pygame.Color("white"))
-    textUnterschrift = font.render(textZusatz, True, pygame.Color("white"))
+                    AuswahlButton1 = Button(image=pygame.image.load("IngamemenuButton.png"),
+                                            x_p=xres / 2 - 100,
+                                            y_p=yres / 2 + 200, textinput="Springer",
+                                            font=getFont(10), basicColor=Weiß,
+                                            changeColor=Grün,
+                                            resulution=(100, 100))
+                    AuswahlButton2 = Button(image=pygame.image.load("IngamemenuButton.png"),
+                                            x_p=xres / 2 + 100,
+                                            y_p=yres / 2 + 200, textinput="Läufer",
+                                            font=getFont(10),
+                                            basicColor=Weiß, changeColor=Grün,
+                                            resulution=(100, 100))
+                    AuswahlButton3 = Button(image=pygame.image.load("IngamemenuButton.png"),
+                                            x_p=xres / 2 - 100,
+                                            y_p=yres / 2 + 0, textinput="Turm",
+                                            font=getFont(10),
+                                            basicColor=Weiß, changeColor=Grün,
+                                            resulution=(100, 100))
+                    AuswahlButton4 = Button(image=pygame.image.load("IngamemenuButton.png"),
+                                            x_p=xres / 2 + 100,
+                                            y_p=yres / 2 - 0, textinput="Dame",
+                                            font=getFont(10),
+                                            basicColor=Weiß, changeColor=Grün,
+                                            resulution=(100, 100))
 
-    textPos = (545, 120)
+                    while not Spiel.auswahlgetroffen:
 
+                        pygame.draw.rect(Bild, pygame.Color("black"), IngameMenu)
+                        Bild.blit(textÜberschrift, textPos)
+                        Bild.blit(textUnterschrift, (505, 200))
+                        Bild.blit((pygame.image.load("IngameMenu.png")), (380, 100))
 
-    AuswahlButton1 = Button(image=pygame.image.load("IngamemenuButton.png"),
-                            x_p=xres / 2 - 100,
-                            y_p=yres / 2 + 200, textinput="Springer",
-                            font=getFont(10), basicColor=Weiß,
-                            changeColor=Grün,
-                            resulution=(100, 100))
-    AuswahlButton2 = Button(image=pygame.image.load("IngamemenuButton.png"),
-                            x_p=xres / 2 + 100,
-                            y_p=yres / 2 + 200, textinput="Läufer",
-                            font=getFont(10),
-                            basicColor=Weiß, changeColor=Grün,
-                            resulution=(100, 100))
-    AuswahlButton3 = Button(image=pygame.image.load("IngamemenuButton.png"),
-                            x_p=xres / 2 - 100,
-                            y_p=yres / 2 + 0, textinput="Turm",
-                            font=getFont(10),
-                            basicColor=Weiß, changeColor=Grün,
-                            resulution=(100, 100))
-    AuswahlButton4 = Button(image=pygame.image.load("IngamemenuButton.png"),
-                            x_p=xres / 2 + 100,
-                            y_p=yres / 2 - 0, textinput="Dame",
-                            font=getFont(10),
-                            basicColor=Weiß, changeColor=Grün,
-                            resulution=(100, 100))
+                        for button in [AuswahlButton1, AuswahlButton2, AuswahlButton3,
+                                       AuswahlButton4]:
+                            mausposition = pygame.mouse.get_pos()
+                            button.buttonfarbe(mausposition)
+                            button.update(Bild=Bild)
 
-    while not Spiel.auswahlgetroffen:
+                        pygame.display.update()
 
-        pygame.draw.rect(Bild, pygame.Color("black"), IngameMenu)
-        Bild.blit(textÜberschrift, textPos)
-        Bild.blit(textUnterschrift, (505, 200))
-        Bild.blit((pygame.image.load("IngameMenu.png")), (380, 100))
+                        if Spiel.weisZug:
+                            for Eingabe in pygame.event.get():
+                                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
+                                    if AuswahlButton1.action(mausposition=mausposition):
+                                        Spiel.spielbrett[zeile][spalte] = "sS"
+                                        Spiel.auswahlgetroffen = True
+                                        break
+                                    if AuswahlButton2.action(mausposition=mausposition):
+                                        Spiel.spielbrett[zeile][spalte] = "sL"
+                                        Spiel.auswahlgetroffen = True
+                                        break
+                                    if AuswahlButton3.action(mausposition=mausposition):
+                                        Spiel.spielbrett[zeile][spalte] = "sT"
+                                        Spiel.auswahlgetroffen = True
+                                        break
+                                    if AuswahlButton4.action(mausposition=mausposition):
+                                        Spiel.spielbrett[zeile][spalte] = "sQ"
+                                        Spiel.auswahlgetroffen = True
+                                        break
+                                    break
+                        else:
+                            for Eingabe in pygame.event.get():
+                                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
+                                    if AuswahlButton1.action(mausposition=mausposition):
+                                        Spiel.spielbrett[zeile][spalte] = "wS"
+                                        Spiel.auswahlgetroffen = True
+                                        break
+                                    if AuswahlButton2.action(mausposition=mausposition):
+                                        Spiel.spielbrett[zeile][spalte] = "wL"
+                                        Spiel.auswahlgetroffen = True
+                                        break
+                                    if AuswahlButton3.action(mausposition=mausposition):
+                                        Spiel.spielbrett[zeile][spalte] = "wT"
+                                        Spiel.auswahlgetroffen = True
+                                        break
+                                    if AuswahlButton4.action(mausposition=mausposition):
+                                        Spiel.spielbrett[zeile][spalte] = "wQ"
+                                        Spiel.auswahlgetroffen = True
+                                        break
+                                    break
 
-        for button in [AuswahlButton1, AuswahlButton2, AuswahlButton3,
-                       AuswahlButton4]:
-
-            mausposition = pygame.mouse.get_pos()
-            button.buttonfarbe(mausposition)
-            button.update(Bild=Bild)
-
-
-        pygame.display.update()
-
-        if Spiel.weisZug:
-            for Eingabe in pygame.event.get():
-                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
-                    if AuswahlButton1.action(mausposition=mausposition):
-                        Spiel.spielbrett[zeile][spalte] = "sS"
-                        Spiel.auswahlgetroffen = True
-                        break
-                    if AuswahlButton2.action(mausposition=mausposition):
-                        Spiel.spielbrett[zeile][spalte] = "sL"
-                        Spiel.auswahlgetroffen = True
-                        break
-                    if AuswahlButton3.action(mausposition=mausposition):
-                        Spiel.spielbrett[zeile][spalte] = "sT"
-                        Spiel.auswahlgetroffen = True
-                        break
-                    if AuswahlButton4.action(mausposition=mausposition):
-                        Spiel.spielbrett[zeile][spalte] = "sQ"
-                        Spiel.auswahlgetroffen = True
-                        break
-                    break
-        else:
-            for Eingabe in pygame.event.get():
-                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
-                    if AuswahlButton1.action(mausposition=mausposition):
-                        Spiel.spielbrett[zeile][spalte] = "wS"
-                        Spiel.auswahlgetroffen = True
-                        break
-                    if AuswahlButton2.action(mausposition=mausposition):
-                        Spiel.spielbrett[zeile][spalte] = "wL"
-                        Spiel.auswahlgetroffen = True
-                        break
-                    if AuswahlButton3.action(mausposition=mausposition):
-                        Spiel.spielbrett[zeile][spalte] = "wT"
-                        Spiel.auswahlgetroffen = True
-                        break
-                    if AuswahlButton4.action(mausposition=mausposition):
-                        Spiel.spielbrett[zeile][spalte] = "wQ"
-                        Spiel.auswahlgetroffen = True
-                        break
-                    break
-
-
-
-
-
-
-def QueensChess(Bild, Spiel):
+def ChaosChess(Bild, Spiel):
     global startspalte, startzeile
     global gespeerteFigur
+    run = True
+    r = True
+    global FeldsperreStatus
+    global rundeTrue
+    global updated
+    updated = False
+    FeldsperreStatus = False
+    rundeTrue = 0
     gespeerteFigur = ""
-    pygame.display.set_caption("QueensChess")
+    pygame.display.set_caption("ChaosChess")
     figurenimages()
+    QueensChessStatus = False
     ausgewählterbutton = ()
     spielerclick = []
     running = True
 
+#Test
+
+
+    Eigenerspieler = client()
+    Spieler1AmZug_Str = "Spieler1 ist am Zug"
+    Spieler2AmZug_Str = "Spieler2 ist am Zug"
+
+    Spieler1AmZug = True
+    Spieler2AmZug = False
+
+    IchBin= ""
+
+
+    Eigenerspieler.connect(Server=Server)
+
+    werBinIch = Eigenerspieler.server_reply()
+    if werBinIch == "Du bist Spieler 1":
+        IchBin = "Spieler1"
+        Spiel.weisZug = True
+        Eigenerspieler.ubertragung("ChaosChess")
+    elif werBinIch == "Du bist Spieler 2":
+        IchBin = "Spieler2"
+        Spiel.weisZug = False
+        Eigenerspieler.ubertragung("ChaosChess")
+
+    print(IchBin)
+
+#Test
+
+
+
 
     while running:
         mausposition = pygame.mouse.get_pos()
-        Bild.fill(Weiß)
         verfügbareZüge = Spiel.machbareZüge()
         zugGemacht = False
+        Bild.fill(Weiß)
         gamesaufbau(Bild=Bild, Spiel=Spiel)
 
-
+        if IchBin == "Spieler1":
+            Spiel.weisZug = True
+        elif IchBin == "Spieler2":
+            Spiel.weisZug = False
 
         if Spiel.powerUp1Weis != "":
             powerUp1WeisAbbildung = "Spielfiguren/" + Spiel.powerUp1Weis + ".png"
@@ -337,10 +372,12 @@ def QueensChess(Bild, Spiel):
             powerUp2SchwarzAbbildung = "But.png"
 
         if Spiel.weisZug:
-            PowerUpButton1 = Button(image=pygame.image.load(powerUp1WeisAbbildung), x_p=xres / 2 + 400, y_p=yres / 1.5 + 200,
+            PowerUpButton1 = Button(image=pygame.image.load(powerUp1WeisAbbildung), x_p=xres / 2 + 400,
+                                    y_p=yres / 1.5 + 200,
                                     textinput="",
                                     font=getFont(10), basicColor=Weiß, changeColor=Grün, resulution=(100, 100))
-            PowerUpButton2 = Button(image=pygame.image.load(powerUp2WeisAbbildung), x_p=xres / 2 + 400, y_p=yres / 2 + 200,
+            PowerUpButton2 = Button(image=pygame.image.load(powerUp2WeisAbbildung), x_p=xres / 2 + 400,
+                                    y_p=yres / 2 + 200,
                                     textinput="",
                                     font=getFont(10), basicColor=Weiß, changeColor=Grün, resulution=(100, 100))
         else:
@@ -348,16 +385,64 @@ def QueensChess(Bild, Spiel):
                                     y_p=yres / 1.5 + 200,
                                     textinput="",
                                     font=getFont(10), basicColor=Weiß, changeColor=Grün, resulution=(100, 100))
-            PowerUpButton2 = Button(image=pygame.image.load(powerUp2SchwarzAbbildung), x_p=xres / 2 + 400, y_p=yres / 2 + 200,
+            PowerUpButton2 = Button(image=pygame.image.load(powerUp2SchwarzAbbildung), x_p=xres / 2 + 400,
+                                    y_p=yres / 2 + 200,
                                     textinput="",
                                     font=getFont(10), basicColor=Weiß, changeColor=Grün, resulution=(100, 100))
-
 
         for button in [PowerUpButton1, PowerUpButton2]:
             button.buttonfarbe(mausposition)
             button.update(Bild=Bild)
 
-        for Eingabe in pygame.event.get():
+
+
+
+
+
+            # Reciever
+
+        if IchBin == "Spieler1" and Spieler2AmZug or IchBin == "Spieler2" and Spieler1AmZug:
+            for a in range(len(Spiel.powerUpSpielbrett)):
+                for b in range(len(Spiel.powerUpSpielbrett[a])):
+                    Spiel.powerUpSpielbrett[a][b] = Eigenerspieler.server_reply()
+                    Eigenerspieler.ubertragung("Angekommen")
+            print("PowerSpielbrett übertragen 1")
+
+
+            for a in range(len(Spiel.spielbrett)):
+                for b in range(len(Spiel.spielbrett[a])):
+                    Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
+                    Eigenerspieler.ubertragung("Angekommen")
+                    if a == 7 and b == 7:
+                        momentanerSpieler = Eigenerspieler.server_reply()
+                        print(momentanerSpieler)
+                        if momentanerSpieler == Spieler1AmZug_Str:
+                            Spieler1AmZug = True
+                            Spieler2AmZug = False
+                        if momentanerSpieler == Spieler2AmZug_Str:
+                            Spieler1AmZug = False
+                            Spieler2AmZug = True
+            print("Voll-Updatte wurde gemacht")
+
+
+            for a in range(len(Spiel.powerUpSpielbrett)):
+                for b in range(len(Spiel.powerUpSpielbrett[a])):
+                    Spiel.powerUpSpielbrett[a][b] = Eigenerspieler.server_reply()
+                    Eigenerspieler.ubertragung("Angekommen")
+            print("PowerSpielbrett übertragen 2")
+
+
+            for a in range(len(Spiel.spielbrett)):
+                for b in range(len(Spiel.spielbrett[a])):
+                    Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
+                    Eigenerspieler.ubertragung("Angekommen")
+            print("Spielbrett übertragen")
+
+
+
+            # Giver
+
+        if IchBin == "Spieler1" and Spieler1AmZug or IchBin == "Spieler2" and Spieler2AmZug:
             if PowerUpButton1.action(mausposition=mausposition):
                 # Hier wird Überprüft ob ein PowerUp Button ausgewählt wurde, wenn er nicht ausgewählt wurde aber angeklickt wird wird er auf True Gesetzt
                 print("Button 1 konnte anvisiert werden")
@@ -368,104 +453,73 @@ def QueensChess(Bild, Spiel):
                         Spiel.powerUp1Status = False
                     print("Button 1 hat seinen Wert Geändert")
 
-
-
-
-
                     # Hier wird das erste Weise PowerUp nach Promote Überprüft
                     if Spiel.powerUp1Status and Spiel.weisZug and Spiel.powerUp1Weis == "Pr":
-                        print("Promote PowerUp wurde aktiviert")
-                        while True:
-                            zeileS= mausposition[0] // spielebutton
-                            spalteS = mausposition[1] // spielebutton
-                            while zeileS <= 7 and spalteS <= 7:
-                                print("Promote PowerUp wird nun bearbeitet")
-                                if Spiel.spielbrett[spalteS][zeileS] != "-" and Spiel.spielbrett[spalteS][zeileS][0] == "w" and Spiel.spielbrett[spalteS][zeileS][1] != "K":
-                                    # Bauer wird in Springer Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "B":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "S"
-                                        Spiel.powerUp1Status = False
-                                        Spiel.powerUp1Weis = ""
-                                        break
-
-                                    # Springer wird in Läufer Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "S":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "L"
-                                        Spiel.powerUp1Status = False
-                                        Spiel.powerUp1Weis = ""
-                                        break
-
-                                    # Läufer wird in einen Turm umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "L":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "T"
-                                        Spiel.powerUp1Status = False
-                                        Spiel.powerUp1Weis = ""
-                                        break
-
-                                    # Turm wird in Dame Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "T":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "Q"
-                                        Spiel.powerUp1Status = False
-                                        Spiel.powerUp1Weis = ""
-                                        break
-
-                                    # Dame wird wegen ungültiger Operation in Bauern Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "Q":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "B"
-                                        Spiel.powerUp1Status = False
-                                        Spiel.powerUp1Weis = ""
-                                        break
-                                break
-                            break
+                        while run:
+                            for SpielerEingabe in pygame.event.get():
+                                position = pygame.mouse.get_pos()
+                                zeileS = position[0] // spielebutton
+                                spalteS = position[1] // spielebutton
+                                if zeileS <= 7 and spalteS <= 7:
+                                    print(Spiel.spielbrett[spalteS][zeileS])
+                                    if Spiel.spielbrett[spalteS][zeileS] != "-":
+                                        print("leere Felder gefiltert")
+                                        if Spiel.spielbrett[spalteS][zeileS] not in Spiel.powerUps:
+                                            print("konnte Anwesenheit von PowerUp filtern")
+                                            if Spiel.spielbrett[spalteS][zeileS][0] == "w" and \
+                                                    Spiel.spielbrett[spalteS][zeileS][1] != "K":
+                                                print(Spiel.spielbrett[spalteS][zeileS])
+                                                if SpielerEingabe.type == pygame.MOUSEBUTTONDOWN:
+                                                    pieces = ["B", "S", "L", "T", "Q", "B"]
+                                                    i = 1
+                                                    if Spiel.weisZug:
+                                                        color = "w"
+                                                    else:
+                                                        color = "s"
+                                                    for f in pieces:
+                                                        if Spiel.spielbrett[spalteS][zeileS][1] == f:
+                                                            Spiel.spielbrett[spalteS][zeileS] = color + pieces[i]
+                                                            Spiel.powerUp1Status = False
+                                                            Spiel.powerUp1Weis = ""
+                                                            run = False
+                                                            break
+                                                        i += 1
+                                pygame.display.update()
+                                print(zeileS, spalteS)
                     # Hier wird das erste Schwarze PowerUp nach Promote Überprüft
                     if Spiel.powerUp1Status and not Spiel.weisZug and Spiel.powerUp1Schwarz == "Pr":
                         print("Promote PowerUp wurde aktiviert")
-                        while True:
-                            zeileS = mausposition[0] // spielebutton
-                            spalteS = mausposition[1] // spielebutton
-                            while zeileS <= 7 and spalteS <= 7:
-                                print("Promote PowerUp wird nun bearbeitet")
-                                if Spiel.spielbrett[spalteS][zeileS] != "-" and Spiel.spielbrett[spalteS][zeileS][0] == "s" and Spiel.spielbrett[spalteS][zeileS][1] != "K":
-                                    # Bauer wird in Springer Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "B":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "S"
-                                        Spiel.powerUp1Status = False
-                                        Spiel.powerUp1Schwarz = ""
-                                        break
-
-                                    # Springer wird in Läufer Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "S":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "L"
-                                        Spiel.powerUp1Status = False
-                                        Spiel.powerUp1Schwarz = ""
-                                        break
-
-                                    # Läufer wird in einen Turm umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "L":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "T"
-                                        Spiel.powerUp1Status = False
-                                        Spiel.powerUp1Schwarz = ""
-                                        break
-
-                                    # Turm wird in Dame Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "T":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "Q"
-                                        Spiel.powerUp1Status = False
-                                        Spiel.powerUp1Schwarz = ""
-                                        break
-
-                                    # Dame wird wegen ungültiger Operation in Bauern Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "Q":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "B"
-                                        Spiel.powerUp1Status = False
-                                        Spiel.powerUp1Schwarz = ""
-                                        break
-                                break
-                            break
-
-
-
-
+                        while run:
+                            for SpielerEingabe in pygame.event.get():
+                                position = pygame.mouse.get_pos()
+                                zeileS = position[0] // spielebutton
+                                spalteS = position[1] // spielebutton
+                                if zeileS <= 7 and spalteS <= 7:
+                                    print(Spiel.spielbrett[spalteS][zeileS])
+                                    if Spiel.spielbrett[spalteS][zeileS] != "-":
+                                        print("leere Felder gefiltert")
+                                        if Spiel.spielbrett[spalteS][zeileS] not in Spiel.powerUps:
+                                            print("konnte Anwesenheit von PowerUp filtern")
+                                            if Spiel.spielbrett[spalteS][zeileS][0] == "s" and \
+                                                    Spiel.spielbrett[spalteS][zeileS][1] != "K":
+                                                print(Spiel.spielbrett[spalteS][zeileS])
+                                                if SpielerEingabe.type == pygame.MOUSEBUTTONDOWN:
+                                                    pieces = ["B", "S", "L", "T", "Q", "B"]
+                                                    i = 1
+                                                    if Spiel.weisZug:
+                                                        color = "w"
+                                                    else:
+                                                        color = "s"
+                                                    for f in pieces:
+                                                        if Spiel.spielbrett[spalteS][zeileS][1] == f:
+                                                            Spiel.spielbrett[spalteS][zeileS] = color + pieces[i]
+                                                            Spiel.powerUp1Status = False
+                                                            Spiel.powerUp1Schwarz = ""
+                                                            run = False
+                                                            break
+                                                        i += 1
+                                pygame.display.update()
+                                print(zeileS, spalteS)
 
                     # Hier wird das erste PowerUp von Weis nach Ragnarök kontrolliert
                     if Spiel.powerUp1Status and Spiel.weisZug and Spiel.powerUp1Weis == "Rö":
@@ -476,12 +530,14 @@ def QueensChess(Bild, Spiel):
                             s = random.choice(randomListe)
 
                             if weiscounter != 4:
-                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "w" and Spiel.spielbrett[z][s][1] != "K":
+                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "w" and \
+                                        Spiel.spielbrett[z][s][1] != "K":
                                     Spiel.spielbrett[z][s] = "-"
                                     Spiel.powerUpSpielbrett[z][s] = "Feuereffekt"
                                     weiscounter = weiscounter + 1
                             if schwarzcounter != 4:
-                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "s" and Spiel.spielbrett[z][s][1] != "K":
+                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "s" and \
+                                        Spiel.spielbrett[z][s][1] != "K":
                                     Spiel.spielbrett[z][s] = "-"
                                     Spiel.powerUpSpielbrett[z][s] = "Feuereffekt"
                                     schwarzcounter = schwarzcounter + 1
@@ -500,12 +556,14 @@ def QueensChess(Bild, Spiel):
                             s = random.choice(randomListe)
 
                             if weiscounter != 4:
-                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "w" and Spiel.spielbrett[z][s][1] != "K":
+                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "w" and \
+                                        Spiel.spielbrett[z][s][1] != "K":
                                     Spiel.spielbrett[z][s] = "-"
                                     Spiel.powerUpSpielbrett[z][s] = "Feuereffekt"
                                     weiscounter = weiscounter + 1
                             if schwarzcounter != 4:
-                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "s" and Spiel.spielbrett[z][s][1] != "K":
+                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "s" and \
+                                        Spiel.spielbrett[z][s][1] != "K":
                                     Spiel.spielbrett[z][s] = "-"
                                     Spiel.powerUpSpielbrett[z][s] = "Feuereffekt"
                                     schwarzcounter = schwarzcounter + 1
@@ -516,58 +574,64 @@ def QueensChess(Bild, Spiel):
                                 Spiel.powerUp1Schwarz = ""
                                 break
 
-
-
-
-
                     # Hier wird das erste PowerUp von Weis nach Feldsperre kontrolliert
                     if Spiel.powerUp1Status and Spiel.weisZug and Spiel.powerUp1Weis == "Fs":
-                        while True:
-                            zeileS = mausposition[0] // spielebutton
-                            spalteS = mausposition[1] // spielebutton
-                            while zeileS <= 7 and spalteS <= 7:
-                                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
-                                    if Spiel.spielbrett[zeileS][spalteS] in Spiel.schwarzeFiguren or Spiel.spielbrett[zeileS][spalteS] in Spiel.weisseFiguren:
-                                        startzeile = zeileS
-                                        startspalte = spalteS
-                                        Spiel.powerUpSpielbrett[zeileS][spalteS] = "Feldsperre"
-                                        gespeerteFigur = Spiel.spielbrett[zeileS][spalteS]
-                                        print("Gesperrte Figur gesetzt auf die Figur bei"+zeileS, spalteS)
-                                        Spiel.powerUp1Status = False
-                                        Spiel.powerUp1Weis = ""
-                                        break
+                        r = True
+                        while r:
+                            for Se in pygame.event.get():
+                                position = pygame.mouse.get_pos()
+                                zeileS = position[0] // spielebutton
+                                spalteS = position[1] // spielebutton
+                                print(zeileS, spalteS)
+                                print("Mausposition wird abgefragt")
 
+                                if Se.type == pygame.MOUSEBUTTONDOWN:
+                                    if 0 <= zeileS <= 7 and 0 <= spalteS <= 7:
+                                        print("Maus liegt im Spielbereich")
+                                        if Spiel.spielbrett[spalteS][zeileS] in Spiel.schwarzeFiguren or \
+                                                Spiel.spielbrett[spalteS][zeileS] in Spiel.weisseFiguren and \
+                                                Spiel.spielbrett[spalteS][zeileS][1] != "K":
+                                            print("Figur existiert und wurde erkannt")
+                                            startzeile = zeileS
+                                            startspalte = spalteS
+                                            Spiel.powerUpSpielbrett[spalteS][zeileS] = "Feldsperre"
+                                            gespeerteFigur = Spiel.spielbrett[spalteS][zeileS]
+                                            print("Gesperrte Figur gesetzt auf die Figur bei")
+                                            print(spalteS, zeileS)
+                                            Spiel.powerUp1Status = False
+                                            Spiel.powerUp1Weis = ""
+                                            FeldsperreStatus = True
+                                            r = False
+                                            break
                     # Hier wird das erste PowerUp von Schwarz nach Feldsperre kontrolliert
                     if Spiel.powerUp1Status and not Spiel.weisZug and Spiel.powerUp1Schwarz == "Fs":
-                        while True:
-                            zeileS = mausposition[0] // spielebutton
-                            spalteS = mausposition[1] // spielebutton
-                            while zeileS <= 7 and spalteS <= 7:
-                                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
-                                    if Spiel.spielbrett[zeileS][spalteS] in Spiel.schwarzeFiguren or Spiel.spielbrett[zeileS][spalteS] in Spiel.weisseFiguren:
-                                        startzeile = zeileS
-                                        startspalte = spalteS
-                                        Spiel.powerUpSpielbrett[zeileS][spalteS] = "Feldsperre"
-                                        gespeerteFigur = Spiel.spielbrett[zeileS][spalteS]
-                                        print("Gesperrte Figur gesetzt auf die Figur bei" + zeileS, spalteS)
-                                        Spiel.powerUp1Status = False
-                                        Spiel.powerUp1Schwarz = ""
-                                        break
+                        r = True
+                        while r:
+                            for Se in pygame.event.get():
+                                position = pygame.mouse.get_pos()
+                                zeileS = position[0] // spielebutton
+                                spalteS = position[1] // spielebutton
+                                print(zeileS, spalteS)
+                                print("Mausposition wird abgefragt")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                                if Se.type == pygame.MOUSEBUTTONDOWN:
+                                    if 0 <= zeileS <= 7 and 0 <= spalteS <= 7:
+                                        print("Maus liegt im Spielbereich")
+                                        if Spiel.spielbrett[spalteS][zeileS] in Spiel.schwarzeFiguren or \
+                                                Spiel.spielbrett[spalteS][zeileS] in Spiel.weisseFiguren and \
+                                                Spiel.spielbrett[spalteS][zeileS][1] != "K":
+                                            print("Figur existiert und wurde erkannt")
+                                            startzeile = zeileS
+                                            startspalte = spalteS
+                                            Spiel.powerUpSpielbrett[spalteS][zeileS] = "Feldsperre"
+                                            gespeerteFigur = Spiel.spielbrett[spalteS][zeileS]
+                                            print("Gesperrte Figur gesetzt auf die Figur bei")
+                                            print(spalteS, zeileS)
+                                            Spiel.powerUp1Status = False
+                                            Spiel.powerUp1Schwarz = ""
+                                            FeldsperreStatus = True
+                                            r = False
+                                            break
 
                     print(Spiel.powerUp1Status)
                     print(Spiel.powerUp2Status)
@@ -582,108 +646,74 @@ def QueensChess(Bild, Spiel):
                         Spiel.powerUp2Status = False
                     print("Button 2 hat seinen wert geändert")
 
-
-
                     # Hier wird das Promote PowerUp Umgesetzt.
                     if Spiel.powerUp2Status and Spiel.weisZug and Spiel.powerUp2Weis == "Pr":
                         print("Promote PowerUp wurde aktiviert")
-                        while True:
-                            zeileS = mausposition[0] // spielebutton
-                            spalteS = mausposition[1] // spielebutton
-                            while zeileS <= 7 and spalteS <= 7:
-                                print("Promote PowerUp wird nun bearbeitet")
-                                if Spiel.spielbrett[spalteS][zeileS] != "-" and Spiel.spielbrett[spalteS][zeileS][0] == "w" and Spiel.spielbrett[spalteS][zeileS][1] != "K":
-                                    # Bauer wird in Springer Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "B":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "S"
-                                        Spiel.powerUp2Status = False
-                                        Spiel.powerUp2Weis = ""
-                                        break
-
-                                    # Springer wird in Läufer Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "S":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "L"
-                                        Spiel.powerUp2Status = False
-                                        Spiel.powerUp2Weis = ""
-                                        break
-
-                                    # Läufer wird in einen Turm umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "L":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "T"
-                                        Spiel.powerUp2Status = False
-                                        Spiel.powerUp2Weis = ""
-                                        break
-
-                                    # Turm wird in Dame Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "T":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "Q"
-                                        Spiel.powerUp2Status = False
-                                        Spiel.powerUp2Weis = ""
-                                        break
-
-                                    # Dame wird wegen ungültiger Operation in Bauern Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "Q":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "B"
-                                        Spiel.powerUp2Status = False
-                                        Spiel.powerUp2Weis = ""
-                                        break
-                                break
-                            break
+                        while run:
+                            for SpielerEingabe in pygame.event.get():
+                                position = pygame.mouse.get_pos()
+                                zeileS = position[0] // spielebutton
+                                spalteS = position[1] // spielebutton
+                                if zeileS <= 7 and spalteS <= 7:
+                                    print(Spiel.spielbrett[spalteS][zeileS])
+                                    if Spiel.spielbrett[spalteS][zeileS] != "-":
+                                        print("leere Felder gefiltert")
+                                        if Spiel.spielbrett[spalteS][zeileS] not in Spiel.powerUps:
+                                            print("konnte Anwesenheit von PowerUp filtern")
+                                            if Spiel.spielbrett[spalteS][zeileS][0] == "w" and \
+                                                    Spiel.spielbrett[spalteS][zeileS][1] != "K":
+                                                print(Spiel.spielbrett[spalteS][zeileS])
+                                                if SpielerEingabe.type == pygame.MOUSEBUTTONDOWN:
+                                                    pieces = ["B", "S", "L", "T", "Q", "B"]
+                                                    i = 1
+                                                    if Spiel.weisZug:
+                                                        color = "w"
+                                                    else:
+                                                        color = "s"
+                                                    for f in pieces:
+                                                        if Spiel.spielbrett[spalteS][zeileS][1] == f:
+                                                            Spiel.spielbrett[spalteS][zeileS] = color + pieces[i]
+                                                            Spiel.powerUp2Status = False
+                                                            Spiel.powerUp2Weis = ""
+                                                            run = False
+                                                            break
+                                                        i += 1
+                                pygame.display.update()
+                                print(zeileS, spalteS)
                     if Spiel.powerUp2Status and not Spiel.weisZug and Spiel.powerUp2Schwarz == "Pr":
                         print("Promote PowerUp wurde aktiviert")
-                        while True:
-                            zeileS = mausposition[0] // spielebutton
-                            spalteS = mausposition[1] // spielebutton
-                            while zeileS <= 7 and spalteS <= 7:
-                                print("Promote PowerUp wird nun bearbeitet")
-                                if Spiel.spielbrett[spalteS][zeileS] != "-" and Spiel.spielbrett[spalteS][zeileS][0] == "s" and Spiel.spielbrett[spalteS][zeileS][1] != "K":
-                                    # Bauer wird in Springer Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "B":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "S"
-                                        Spiel.powerUp2Status = False
-                                        Spiel.powerUp2Schwarz = ""
-                                        break
-
-                                    # Springer wird in Läufer Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "S":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "L"
-                                        Spiel.powerUp2Status = False
-                                        Spiel.powerUp2Schwarz = ""
-                                        break
-
-                                    # Läufer wird in einen Turm umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "L":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "T"
-                                        Spiel.powerUp2Status = False
-                                        Spiel.powerUp2Schwarz = ""
-                                        break
-
-                                    # Turm wird in Dame Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "T":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "Q"
-                                        Spiel.powerUp2Status = False
-                                        Spiel.powerUp2Schwarz = ""
-                                        break
-
-                                    # Dame wird wegen ungültiger Operation in Bauern Umgewandelt
-                                    if Spiel.spielbrett[spalteS][zeileS][1] == "Q":
-                                        Spiel.spielbrett[spalteS][zeileS][1] = "B"
-                                        Spiel.powerUp2Status = False
-                                        Spiel.powerUp2Schwarz = ""
-                                        break
-                                break
-                            break
+                        while run:
+                            for SpielerEingabe in pygame.event.get():
+                                position = pygame.mouse.get_pos()
+                                zeileS = position[0] // spielebutton
+                                spalteS = position[1] // spielebutton
+                                if zeileS <= 7 and spalteS <= 7:
+                                    print(Spiel.spielbrett[spalteS][zeileS])
+                                    if Spiel.spielbrett[spalteS][zeileS] != "-":
+                                        print("leere Felder gefiltert")
+                                        if Spiel.spielbrett[spalteS][zeileS] not in Spiel.powerUps:
+                                            print("konnte Anwesenheit von PowerUp filtern")
+                                            if Spiel.spielbrett[spalteS][zeileS][0] == "w" and \
+                                                    Spiel.spielbrett[spalteS][zeileS][1] != "K":
+                                                print(Spiel.spielbrett[spalteS][zeileS])
+                                                if SpielerEingabe.type == pygame.MOUSEBUTTONDOWN:
+                                                    pieces = ["B", "S", "L", "T", "Q", "B"]
+                                                    i = 1
+                                                    if Spiel.weisZug:
+                                                        color = "w"
+                                                    else:
+                                                        color = "s"
+                                                    for f in pieces:
+                                                        if Spiel.spielbrett[spalteS][zeileS][1] == f:
+                                                            Spiel.spielbrett[spalteS][zeileS] = color + pieces[i]
+                                                            Spiel.powerUp2Status = False
+                                                            Spiel.powerUp2Schwarz = ""
+                                                            run = False
+                                                            break
+                                                        i += 1
+                                pygame.display.update()
+                                print(zeileS, spalteS)
                     # Hier endet die Promote PowerUp Beschreibung
-
-
-
-
-
-
-
-
-
-
 
                     # Hier wird das zweite PowerUp von Weis nach Ragnarök kontrolliert
                     if Spiel.powerUp2Status and Spiel.weisZug and Spiel.powerUp2Weis == "Rö":
@@ -694,12 +724,14 @@ def QueensChess(Bild, Spiel):
                             s = random.choice(randomListe)
 
                             if weiscounter != 4:
-                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "w" and Spiel.spielbrett[z][s][1] != "K":
+                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "w" and \
+                                        Spiel.spielbrett[z][s][1] != "K":
                                     Spiel.spielbrett[z][s] = "-"
                                     Spiel.powerUpSpielbrett[z][s] = "Feuereffekt"
                                     weiscounter = weiscounter + 1
                             if schwarzcounter != 4:
-                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "s" and Spiel.spielbrett[z][s][1] != "K":
+                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "s" and \
+                                        Spiel.spielbrett[z][s][1] != "K":
                                     Spiel.spielbrett[z][s] = "-"
                                     Spiel.powerUpSpielbrett[z][s] = "Feuereffekt"
                                     schwarzcounter = schwarzcounter + 1
@@ -709,8 +741,6 @@ def QueensChess(Bild, Spiel):
                                 Spiel.powerUp2Status = False
                                 Spiel.powerUp2Weis = ""
                                 break
-
-
                     # Hier wird das zweite PowerUp von Schwarz nach Ragnarök kontrolliert
                     if Spiel.powerUp2Status and not Spiel.weisZug and Spiel.powerUp2Schwarz == "Rö":
                         schwarzcounter = 0
@@ -720,12 +750,14 @@ def QueensChess(Bild, Spiel):
                             s = random.choice(randomListe)
 
                             if weiscounter != 4:
-                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "w" and Spiel.spielbrett[z][s][1] != "K":
+                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "w" and \
+                                        Spiel.spielbrett[z][s][1] != "K":
                                     Spiel.spielbrett[z][s] = "-"
                                     Spiel.powerUpSpielbrett[z][s] = "Feuereffekt"
                                     weiscounter = weiscounter + 1
                             if schwarzcounter != 4:
-                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "s" and Spiel.spielbrett[z][s][1] != "K":
+                                if Spiel.spielbrett != "-" and Spiel.spielbrett[z][s][0] == "s" and \
+                                        Spiel.spielbrett[z][s][1] != "K":
                                     Spiel.spielbrett[z][s] = "-"
                                     Spiel.powerUpSpielbrett[z][s] = "Feuereffekt"
                                     schwarzcounter = schwarzcounter + 1
@@ -738,116 +770,625 @@ def QueensChess(Bild, Spiel):
 
                                 # Hier endet die Programmierung für das Ragnarök PowerUp
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                     # Hier beginnt die Programmierung für das Feldsperre PowerUp
                     if Spiel.powerUp2Status and Spiel.weisZug and Spiel.powerUp2Weis == "Fs":
-                        while True:
-                            zeileS = mausposition[0] // spielebutton
-                            spalteS = mausposition[1] // spielebutton
-                            while zeileS <= 7 and spalteS <= 7:
-                                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
-                                    if Spiel.spielbrett[zeileS][spalteS] in Spiel.schwarzeFiguren or Spiel.spielbrett[zeileS][spalteS] in Spiel.weisseFiguren:
-                                        startzeile = zeileS
-                                        startspalte = spalteS
-                                        Spiel.powerUpSpielbrett[zeileS][spalteS] = "Feldsperre"
-                                        gespeerteFigur = Spiel.spielbrett[zeileS][spalteS]
-                                        print("Gesperrte Figur gesetzt auf die Figur bei" + zeileS, spalteS)
-                                        Spiel.powerUp2Status = False
-                                        Spiel.powerUp2Weis = ""
-                                        break
+                        r = True
+                        while r:
+                            for Se in pygame.event.get():
+                                position = pygame.mouse.get_pos()
+                                zeileS = position[0] // spielebutton
+                                spalteS = position[1] // spielebutton
+                                print(zeileS, spalteS)
+                                print("Mausposition wird abgefragt")
+
+                                if Se.type == pygame.MOUSEBUTTONDOWN:
+                                    if 0 <= zeileS <= 7 and 0 <= spalteS <= 7:
+                                        print("Maus liegt im Spielbereich")
+                                        if Spiel.spielbrett[spalteS][zeileS] in Spiel.schwarzeFiguren or \
+                                                Spiel.spielbrett[spalteS][zeileS] in Spiel.weisseFiguren and \
+                                                Spiel.spielbrett[spalteS][zeileS][1] != "K":
+                                            print("Figur existiert und wurde erkannt")
+                                            startzeile = zeileS
+                                            startspalte = spalteS
+                                            Spiel.powerUpSpielbrett[spalteS][zeileS] = "Feldsperre"
+                                            gespeerteFigur = Spiel.spielbrett[spalteS][zeileS]
+                                            print("Gesperrte Figur gesetzt auf die Figur bei")
+                                            print(spalteS, zeileS)
+                                            Spiel.powerUp2Status = False
+                                            Spiel.powerUp2Weis = ""
+                                            FeldsperreStatus = True
+                                            r = False
+                                            break
                     if Spiel.powerUp2Status and not Spiel.weisZug and Spiel.powerUp2Schwarz == "Fs":
-                        while True:
-                            zeileS = mausposition[0] // spielebutton
-                            spalteS = mausposition[1] // spielebutton
-                            while zeileS <= 7 and spalteS <= 7:
-                                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
-                                    if Spiel.spielbrett[zeileS][spalteS] in Spiel.schwarzeFiguren or Spiel.spielbrett[zeileS][spalteS] in Spiel.weisseFiguren:
-                                        startzeile = zeileS
-                                        startspalte = spalteS
-                                        Spiel.powerUpSpielbrett[zeileS][spalteS] = "Feldsperre"
-                                        gespeerteFigur = Spiel.spielbrett[zeileS][spalteS]
-                                        print("Gesperrte Figur gesetzt auf die Figur bei" + zeileS, spalteS)
-                                        Spiel.powerUp2Status = False
-                                        Spiel.powerUp2Schwarz = ""
-                                        break
+                        r = True
+                        while r:
+                            for Se in pygame.event.get():
+                                position = pygame.mouse.get_pos()
+                                zeileS = position[0] // spielebutton
+                                spalteS = position[1] // spielebutton
+                                print(zeileS, spalteS)
+                                print("Mausposition wird abgefragt")
+
+                                if Se.type == pygame.MOUSEBUTTONDOWN:
+                                    if 0 <= zeileS <= 7 and 0 <= spalteS <= 7:
+                                        print("Maus liegt im Spielbereich")
+                                        if Spiel.spielbrett[spalteS][zeileS] in Spiel.schwarzeFiguren or \
+                                                Spiel.spielbrett[spalteS][zeileS] in Spiel.weisseFiguren and \
+                                                Spiel.spielbrett[spalteS][zeileS][1] != "K":
+                                            print("Figur existiert und wurde erkannt")
+                                            startzeile = zeileS
+                                            startspalte = spalteS
+                                            Spiel.powerUpSpielbrett[spalteS][zeileS] = "Feldsperre"
+                                            gespeerteFigur = Spiel.spielbrett[spalteS][zeileS]
+                                            print("Gesperrte Figur gesetzt auf die Figur bei")
+                                            print(spalteS, zeileS)
+                                            Spiel.powerUp2Status = False
+                                            Spiel.powerUp2Schwarz = ""
+                                            FeldsperreStatus = True
+                                            r = False
+                                            break
                     # Hier endet die Programmierung für das Feldsperre PowerUp
-
-
-
-
-
-
-
-
 
                     print(Spiel.powerUp1Status)
                     print(Spiel.powerUp2Status)
 
-            if Eingabe.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if Eingabe.type == pygame.MOUSEBUTTONDOWN:
+            if not updated:
+                for a in range(len(Spiel.spielbrett)):
+                    for b in range(len(Spiel.spielbrett[a])):
+                        Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
+                        Eigenerspieler.ubertragung("Angekommen")
+                        updated = True
+                print("Spielerdaten wurden geupdated")
+
+                # Check
+            for Eingabe in pygame.event.get():
+                if Eingabe.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                print("Aktion erkannt")
+                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
+                    mausposition = pygame.mouse.get_pos()
+                    zeile = mausposition[0] // spielebutton
+                    spalte = mausposition[1] // spielebutton
+                    print(mausposition)
+                    if zeile > 7 or spalte > 7:
+                        break
+                    print(verfügbareZüge)
+                    if ausgewählterbutton == (zeile, spalte):
+                        ausgewählterbutton = ()
+                        spielerclick = []
+
+                    else:
+                        ausgewählterbutton = (zeile, spalte)
+                        spielerclick.append(ausgewählterbutton)
+                    if len(spielerclick) == 2:
+                        move = figurenBewegung(spielerclick[0], spielerclick[1], Spiel.spielbrett)
+                        if move.figurBewegungID in verfügbareZüge:
+                            Spiel.Move(move)
+                            BauerInFigur(Spiel=Spiel, spielerclick=spielerclick[1], Bild=Bild, font=getFont(10))
+                            Spiel.runde += 1
+
+                            if FeldsperreStatus and IchBin == "Spieler1":
+                                rundeTrue += 2
+                                print("Die Feldsperre liegt bei der Runde:")
+                                print(rundeTrue)
+                            if rundeTrue == 4 and gespeerteFigur != "" and IchBin == "Spieler1":
+                                if gespeerteFigur == Spiel.spielbrett[startspalte][startzeile]:
+                                    Spiel.spielbrett[startspalte][startzeile] = "-"
+                            if rundeTrue == 5 and IchBin == "Spieler1":
+                                Spiel.powerUpSpielbrett[startspalte][startzeile] = "-"
+                                rundeTrue = 0
+                                FeldsperreStatus = False
+
+                            ausgewählterbutton = ()
+                            spielerclick = []
+
+                            for a in range(len(Spiel.powerUpSpielbrett)):
+                                for b in range(len(Spiel.powerUpSpielbrett[a])):
+                                    print(Spiel.powerUpSpielbrett[a][b])
+                                    Eigenerspieler.ubertragung(ms=Spiel.powerUpSpielbrett[a][b])
+                                    # Eventuelle Bestätigung nötig
+                            print("PowerUpSpielbrett wurde übertragen")
+                            # Check
+
+                            for a in range(len(Spiel.spielbrett)):
+                                for b in range(len(Spiel.spielbrett[a])):
+                                    Eigenerspieler.ubertragung(ms=Spiel.spielbrett[a][b])
+                                    if a == 7 and b == 7:
+                                        message = Eigenerspieler.server_reply()
+                                        if message == "Change":
+                                            Spieler1AmZug = not Spieler1AmZug
+                                            Spieler2AmZug = not Spieler2AmZug
+                                            print("Spielende Spieler wurde gechanged")
+                            # Check
+
+            print("Geht es noch weiter")
+
+            print(Spiel.runde)
+
+            zugGemacht = False
+
+
+
+        gamesaufbau(Bild=Bild, Spiel=Spiel)
+        pygame.display.update()
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+
+def QueensChess(Bild, Spiel):
+    global startspalte, startzeile
+    global gespeerteFigur
+    global updated
+    updated = False
+    gespeerteFigur = ""
+    pygame.display.set_caption("QueensChess")
+    figurenimages()
+    Spiel.QueensChessStatus = True
+    Spiel.spielbrett = Spiel.QueensChessSpielbrett
+    ausgewählterbutton = ()
+    spielerclick = []
+    running = True
+
+
+
+    Eigenerspieler = client()
+    Spieler1AmZug_Str = "Spieler1 ist am Zug"
+    Spieler2AmZug_Str = "Spieler2 ist am Zug"
+
+    Spieler1AmZug = True
+    Spieler2AmZug = False
+
+    IchBin= ""
+
+    Eigenerspieler.connect(Server=Server)
+
+    werBinIch = Eigenerspieler.server_reply()
+    if werBinIch == "Du bist Spieler 1":
+        IchBin = "Spieler1"
+        Spiel.weisZug = True
+        Eigenerspieler.ubertragung("QueensChess")
+    elif werBinIch == "Du bist Spieler 2":
+        IchBin = "Spieler2"
+        Spiel.weisZug = False
+        Eigenerspieler.ubertragung("QueensChess")
+
+
+
+
+
+
+    while running:
+        Bild.fill(Weiß)
+        gamesaufbau(Bild=Bild, Spiel=Spiel)
+        pygame.display.update()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Reciever
+
+        if IchBin == "Spieler1" and Spieler2AmZug or IchBin == "Spieler2" and Spieler1AmZug:
+            for Eingabe in pygame.event.get():
+                if Eingabe.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+
+            if Eigenerspieler.server_reply() == "SC":
+                for a in range(len(Spiel.spielbrett)):
+                    for b in range(len(Spiel.spielbrett[a])):
+                        Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
+                        Eigenerspieler.ubertragung("Angekommen")
+                        Bild.fill(Weiß)
+                        gamesaufbau(Bild=Bild, Spiel=Spiel)
+                        pygame.display.update()
+                        if a == 7 and b == 7:
+                            momentanerSpieler = Eigenerspieler.server_reply()
+                            print(momentanerSpieler)
+                            if momentanerSpieler == Spieler1AmZug_Str:
+                                Spieler1AmZug = True
+                                Spieler2AmZug = False
+                            if momentanerSpieler == Spieler2AmZug_Str:
+                                Spieler1AmZug = False
+                                Spieler2AmZug = True
+
+                for a in range(len(Spiel.spielbrett)):
+                    for b in range(len(Spiel.spielbrett[a])):
+                        Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
+                        Eigenerspieler.ubertragung("Angekommen")
+
+            elif Eigenerspieler.server_reply() == "NSC":
+                for a in range(len(Spiel.spielbrett)):
+                    for b in range(len(Spiel.spielbrett[a])):
+                        Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
+                        Eigenerspieler.ubertragung("Angekommen")
+                for a in range(len(Spiel.spielbrett)):
+                    for b in range(len(Spiel.spielbrett[a])):
+                        Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
+                        Eigenerspieler.ubertragung("Angekommen")
+
+
+
+
+
+
+
+
+
+            print(Spieler1AmZug, Spieler2AmZug)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Spieler
+
+
+        if IchBin == "Spieler1" and Spieler1AmZug or IchBin == "Spieler2" and Spieler2AmZug:
+
+
+            for a in range(len(Spiel.spielbrett)):
+                for b in range(len(Spiel.spielbrett[a])):
+                    Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
+                    Eigenerspieler.ubertragung("Angekommen")
+
+
+
+
+
+            print("Ich bin am Zug!")
+            if IchBin == "Spieler1":
+                Spiel.weisZug = True
+            elif IchBin == "Spieler2":
+                Spiel.weisZug = False
+
+            verfügbareZüge = Spiel.machbareZüge()
+            print(verfügbareZüge)
+
+            for Eingabe in pygame.event.get():
                 mausposition = pygame.mouse.get_pos()
-                zeile = mausposition[0] // spielebutton
-                spalte = mausposition[1] // spielebutton
-                if zeile > 7 or spalte > 7:
-                    break
-                print(verfügbareZüge)
-                if ausgewählterbutton == (zeile, spalte):
-                    ausgewählterbutton = ()
-                    spielerclick = []
-                else:
-                    ausgewählterbutton = (zeile, spalte)
-                    spielerclick.append(ausgewählterbutton)
-                if len(spielerclick) == 2:
-                    move = figurenBewegung(spielerclick[0], spielerclick[1], Spiel.spielbrett)
+                if Eingabe.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
+                    mausposition = pygame.mouse.get_pos()
+                    zeile = mausposition[0] // spielebutton
+                    spalte = mausposition[1] // spielebutton
+                    if zeile > 7 or spalte > 7:
+                        break
+                    #print(verfügbareZüge)
+                    if ausgewählterbutton == (zeile, spalte):
+                        ausgewählterbutton = ()
+                        spielerclick = []
+                    else:
+                        ausgewählterbutton = (zeile, spalte)
+                        spielerclick.append(ausgewählterbutton)
+                    if len(spielerclick) == 2:
+                        move = figurenBewegung(spielerclick[0], spielerclick[1], Spiel.spielbrett)
+                        if move.figurBewegungID in verfügbareZüge:
+                            Spiel.Move(move)
+                            BauerInFigur(Spiel=Spiel, spielerclick=spielerclick[1], Bild=Bild, font=getFont(10))
+                            Spiel.runde += 1
+                            print("Gamestate wird übertragen")
 
-                    if move.figurBewegungID in verfügbareZüge:
-                        Spiel.Move(move)
-                        BauerInFigur(Spiel=Spiel, spielerclick=spielerclick[1], Bild=Bild, font=getFont(10))
-                        print(Spiel.spielbrett[0][6])
-                        Spiel.runde += 1
-                    ausgewählterbutton = ()
-                    spielerclick = []
-                print("Geht es noch weiter")
+                            for a in range(len(Spiel.spielbrett)):
+                                for b in range(len(Spiel.spielbrett[a])):
+                                    Eigenerspieler.ubertragung(ms=Spiel.spielbrett[a][b])
+                                    if a == 7 and b == 7:
+                                        message = Eigenerspieler.server_reply()
+                                        if message == "Change":
+                                            Spieler1AmZug = not Spieler1AmZug
+                                            Spieler2AmZug = not Spieler2AmZug
+                                            print("Spielende Spieler wurde gechanged")
+                            ausgewählterbutton = ()
+                            spielerclick = []
+                        print(Spiel.runde)
+                        updated = False
 
 
-                if Spiel.runde == 4 and gespeerteFigur != "":
-                    if gespeerteFigur == Spiel.spielbrett[startspalte][startzeile]:
-                        Spiel.spielbrett[startspalte][startzeile] = "-"
-                    for r in range(Spielgröße):
-                        for c in range(Spielgröße):
-                            Spiel.powerUpSpielbrett[r][c] = ""
 
-                print(Spiel.runde)
 
-                zugGemacht = False
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         pygame.display.update()
 
-def TheFloorIsLava(Bild, Spiel):
-    pygame.display.set_caption("Spielemenu")
-    while True:
-        Bild.fill(Grün)
-        mausposition = pygame.mouse.get_pos()
-        gamesaufbau(Bild=Bild, Spiel=Spiel)
 
+
+
+        print("GameLoop startet erneut")
+
+def TheFloorIsLava(Bild, Spiel):
+    global startspalte, startzeile
+    global gespeerteFigur
+    Spiel.TheFloorIsLavaChessStatus = True
+    run = True
+    r = True
+    global FeldsperreStatus
+    global rundeTrue
+    global updated
+    updated = False
+    destructionphase = True
+    FeldsperreStatus = False
+    rundeTrue = 0
+    pygame.display.set_caption("TheFloorIsLava")
+    figurenimages()
+    ausgewählterbutton = ()
+    gespeerteFiguren = []
+    gespeertePositionen = []
+    spielerclick = []
+    running = True
+    randomListe = [0, 1, 2, 3, 4, 5, 6, 7]
+
+    Eigenerspieler = client()
+    Spieler1AmZug_Str = "Spieler1 ist am Zug"
+    Spieler2AmZug_Str = "Spieler2 ist am Zug"
+
+    Spieler1AmZug = True
+    Spieler2AmZug = False
+
+    IchBin = ""
+
+    Eigenerspieler.connect(Server=Server)
+
+    werBinIch = Eigenerspieler.server_reply()
+    if werBinIch == "Du bist Spieler 1":
+        IchBin = "Spieler1"
+        Spiel.weisZug = True
+        Eigenerspieler.ubertragung("TheFloorIsLava")
+    elif werBinIch == "Du bist Spieler 2":
+        IchBin = "Spieler2"
+        Spiel.weisZug = False
+        Eigenerspieler.ubertragung("TheFloorIsLava")
+
+    print(IchBin)
+
+    while running:
+        Bild.fill(Weiß)
+        verfügbareZüge = Spiel.machbareZüge()
+        zugGemacht = False
+        gamesaufbau(Bild=Bild, Spiel=Spiel)
+        basicColor = pygame.color.Color(Weiß)
+
+        if IchBin == "Spieler1":
+            Spiel.weisZug = True
+        elif IchBin == "Spieler2":
+            Spiel.weisZug = False
+
+        if IchBin == "Spieler1" and Spieler2AmZug or IchBin == "Spieler2" and Spieler1AmZug:
+            for Eingabe in pygame.event.get():
+                if Eingabe.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+            for a in range(len(Spiel.powerUpSpielbrett)):
+                for b in range(len(Spiel.powerUpSpielbrett[a])):
+                    Spiel.powerUpSpielbrett[a][b] = Eigenerspieler.server_reply()
+                    Eigenerspieler.ubertragung("Angekommen")
+                    print("PowerSpielbrett übertragen")
+
+            for a in range(len(Spiel.spielbrett)):
+                for b in range(len(Spiel.spielbrett[a])):
+                    Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
+                    Eigenerspieler.ubertragung("Angekommen")
+                    Bild.fill(Weiß)
+                    gamesaufbau(Bild=Bild, Spiel=Spiel)
+                    pygame.display.update()
+                    if a == 7 and b == 7:
+                        momentanerSpieler = Eigenerspieler.server_reply()
+                        print(momentanerSpieler)
+                        if momentanerSpieler == Spieler1AmZug_Str:
+                            Spieler1AmZug = True
+                            Spieler2AmZug = False
+                        if momentanerSpieler == Spieler2AmZug_Str:
+                            Spieler1AmZug = False
+                            Spieler2AmZug = True
+
+            for a in range(len(Spiel.powerUpSpielbrett)):
+                for b in range(len(Spiel.powerUpSpielbrett[a])):
+                    Spiel.powerUpSpielbrett[a][b] = Eigenerspieler.server_reply()
+                    Eigenerspieler.ubertragung("Angekommen")
+                    print("PowerSpielbrett übertragen")
+
+            for a in range(len(Spiel.spielbrett)):
+                for b in range(len(Spiel.spielbrett[a])):
+                    Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
+                    Eigenerspieler.ubertragung("Angekommen")
+                    print("Spielbrett übertragen")
+
+            print(Spieler1AmZug, Spieler2AmZug)
+
+        if IchBin == "Spieler1" and Spieler1AmZug or IchBin == "Spieler2" and Spieler2AmZug:
+            if not updated:
+                for a in range(len(Spiel.spielbrett)):
+                    for b in range(len(Spiel.spielbrett[a])):
+                        Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
+                        Eigenerspieler.ubertragung("Angekommen")
+                        updated = True
+
+            verfügbareZüge = Spiel.machbareZüge()
+            print(verfügbareZüge)
+
+            for Eingabe in pygame.event.get():
+                if Eingabe.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
+                    mausposition = pygame.mouse.get_pos()
+                    zeile = mausposition[0] // spielebutton
+                    spalte = mausposition[1] // spielebutton
+                    if zeile > 7 or spalte > 7:
+                        break
+                    print(verfügbareZüge)
+                    if ausgewählterbutton == (zeile, spalte):
+                        ausgewählterbutton = ()
+                        spielerclick = []
+                    else:
+                        ausgewählterbutton = (zeile, spalte)
+                        spielerclick.append(ausgewählterbutton)
+                    if len(spielerclick) == 2:
+                        move = figurenBewegung(spielerclick[0], spielerclick[1], Spiel.spielbrett)
+                        if move.figurBewegungID in verfügbareZüge:
+                            Spiel.Move(move)
+                            BauerInFigur(Spiel=Spiel, spielerclick=spielerclick[1], Bild=Bild, font=getFont(10))
+                            rundeTrue += 1
+                            if destructionphase and IchBin == "Spieler1":
+                                r = True
+                                count = 0
+                                while r:
+                                    while count < 4:
+                                        z = random.choice(randomListe)
+                                        s = random.choice(randomListe)
+                                        print(z)
+                                        print(s)
+
+                                        print(z)
+                                        print(s)
+                                        if Spiel.spielbrett[s][z] != "-" and Spiel.spielbrett[s][z][1] != "K":
+                                            Spiel.powerUpSpielbrett[s][z] = "Feldsperre"
+                                            gespeertePosition = (s, z)
+                                            gespeerteFigur = Spiel.spielbrett[s][z]
+                                            gespeerteFiguren.append(gespeerteFigur)
+                                            gespeertePositionen.append(gespeertePosition)
+                                            print(gespeerteFiguren)
+                                            count += 1
+                                    destructionphase = False
+                                    r = False
+                        ausgewählterbutton = ()
+                        spielerclick = []
+
+                        if rundeTrue % 4 == 0 and rundeTrue != 0 and IchBin == "Spieler1":
+                            for f in range(len(gespeertePositionen)):
+                                pos1 = gespeertePositionen[f][0]
+                                pos2 = gespeertePositionen[f][1]
+
+                                print(pos1)
+                                print(pos2)
+                                if gespeerteFiguren[f] == Spiel.spielbrett[pos1][pos2]:
+                                    Spiel.spielbrett[pos1][pos2] = "-"
+                            gespeertePositionen.clear()
+
+                        if rundeTrue % 5 == 0 and rundeTrue != 0 and IchBin == "Spieler1":
+                            for a in range(Spielgröße):
+                                for b in range(Spielgröße):
+                                    Spiel.powerUpSpielbrett[a][b] = "-"
+                                    destructionphase = True
+
+                        for a in range(len(Spiel.powerUpSpielbrett)):
+                            for b in range(len(Spiel.powerUpSpielbrett[a])):
+                                Eigenerspieler.ubertragung(ms=Spiel.powerUpSpielbrett[a][b])
+
+                        for a in range(len(Spiel.spielbrett)):
+                            for b in range(len(Spiel.spielbrett[a])):
+                                Eigenerspieler.ubertragung(ms=Spiel.spielbrett[a][b])
+                                if a == 7 and b == 7:
+                                    message = Eigenerspieler.server_reply()
+                                    if message == "Change":
+                                        Spieler1AmZug = not Spieler1AmZug
+                                        Spieler2AmZug = not Spieler2AmZug
+                                        print("Spielende Spieler wurde gechanged")
+
+            print(rundeTrue)
+            zugGemacht = False
         pygame.display.update()
 
 
@@ -861,3 +1402,4 @@ def main():
 
 
 main()
+
