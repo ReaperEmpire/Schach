@@ -18,6 +18,8 @@ Schwarz = (0, 0, 0)
 
 class Game:
     def __init__(self):
+        self.QueensChessStatus = False
+        self.changed = False
         self.spielbrett = [
             ["sT", "sS", "sL", "sQ", "sK", "sL", "sS", "sT"],
             ["sB", "sB", "sB", "sB", "sB", "sB", "sB", "sB"],
@@ -27,6 +29,16 @@ class Game:
             ["-", "-", "-", "-", "-", "-", "-", "-"],
             ["wB", "wB", "wB", "wB", "wB", "wB", "wB", "wB"],
             ["wT", "wS", "wL", "wQ", "wK", "wL", "wS", "wT"]]
+
+        self.QueensChessSpielbrett = [
+            ["sQ", "sQ", "sQ", "sQ", "sK", "sQ", "sQ", "sQ"],
+            ["sQ", "sQ", "sQ", "sQ", "sQ", "sQ", "sQ", "sQ"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["wQ", "wQ", "wQ", "wQ", "wQ", "wQ", "wQ", "wQ"],
+            ["wQ", "wQ", "wQ", "wQ", "wK", "wQ", "wQ", "wQ"]]
 
         self.powerUpSpielbrett = [
             ["-", "-", "-", "-", "-", "-", "-", "-"],
@@ -38,13 +50,16 @@ class Game:
             ["-", "-", "-", "-", "-", "-", "-", "-"],
             ["-", "-", "-", "-", "-", "-", "-", "-"]]
 
+
+
+
         self.weisZug = True
         self.moveLog = []
         self.schwarzeFiguren = ["sT", "sS", "sL", "sQ", "sK", "sB"]
         self.weisseFiguren = ["wT", "wS", "wL", "wQ", "wK", "wB"]
         self.powerUps = ["Pr", "Sn", "Ro", "Fs", "Rö"]
         self.runde = 1
-        self.randomPowerUp = [1, 2, 3, 4]
+        self.randomPowerUp = [0, 1, 2, 3, 4]
         self.randomListe = [0,1,2,3,4,5,6,7]
         self.powerUp1Weis = ""
         self.powerUp1Schwarz = ""
@@ -52,6 +67,10 @@ class Game:
         self.powerUp2Weis = ""
         self.powerUp2Schwarz = ""
         self.powerUp2Status = False
+        self.anzahlPowerUps = 0
+        self.counter = 0
+        self.run = True
+        self.TheFloorIsLavaChessStatus = False
 
         self.auswahlgetroffen = True
 
@@ -64,22 +83,50 @@ class Game:
         self.moveLog.append(str(move.endZeile))
         self.moveLog.append(str(move.endSpalte))
         print(self.figurGeschlagen)
-        if self.figurGeschlagen in self.schwarzeFiguren or self.figurGeschlagen in self.weisseFiguren:
-            for z in range(len(self.spielbrett)):
-                for s in range(len(self.spielbrett[z])):
-                    print("PowerUpSpawnt")
 
+
+#Anzahl der vorhandenen PowerUps wird ermittelt
+
+        if not self.QueensChessStatus and not self.TheFloorIsLavaChessStatus:
+
+
+            if self.figurGeschlagen in self.schwarzeFiguren or self.figurGeschlagen in self.weisseFiguren:
+                print("PowerUpSpawnt")
+                self.counter = self.anzahlPowerUps
+                # Hier werden alle PowerUps die momentan im Spiel sind gezählt
+                for a in range(len(self.spielbrett)):
+                    for b in range(len(self.spielbrett[a])):
+                        if self.spielbrett[a][b] in self.powerUps:
+                            self.anzahlPowerUps += 1
+
+                print(self.anzahlPowerUps)
+                print("Anzahl der PowerUps im Current Gamestate")
+
+                self.run = True
+                while self.run:
+                    #Hier wird ein Ort für ein PowerUp gesucht und versucht zu spawnen
                     self.z = random.choice(self.randomListe)
                     self.s = random.choice(self.randomListe)
                     self.p = random.choice(self.randomPowerUp)
 
-                    if self.spielbrett[self.z][self.s] == "-":
-                        print(self.z)
-                        print(self.s)
-                        self.spielbrett[self.z][self.s] = self.powerUps[self.p]
+                    if self.counter > self.anzahlPowerUps:
+                        self.run = False
                         break
-                    break
-                break
+
+                    else:
+                        if self.spielbrett[self.s][self.z] == "-":
+                            self.spielbrett[self.s][self.z] = self.powerUps[self.p]
+
+
+                    for e in range(len(self.spielbrett)):
+                        for f in range(len(self.spielbrett[e])):
+                            if self.spielbrett[e][f] in self.powerUps:
+                                self.counter += 1
+                    print(self.counter)
+                    print("Das ist der Counter")
+
+
+
 
 #PowerUp wird aufgesammelt und der jeweiligen Variable zugeordnet
 
@@ -135,6 +182,7 @@ class Game:
                 print("Weiß hat gewonnen.")
             else:
                 print("Schwarz hat gewonnen.")
+
 
         self.weisZug = not self.weisZug
         if self.weisZug:
