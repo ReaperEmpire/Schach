@@ -1,0 +1,552 @@
+import socket
+import threading
+import time
+from game import Game
+
+
+
+Header = 64
+ChaosChess_Port = 5050
+TheFloorIsLava_Port = 6060
+QueensChess_Port = 7070
+Server = socket.gethostbyname(socket.gethostname())
+Erstverbindung = "Erstverbindung"
+
+ChaosChess_Adresse = (Server, ChaosChess_Port)
+TheFloorIsLava_Adresse = (Server, TheFloorIsLava_Port)
+QueensChess_Adresse = (Server, QueensChess_Port)
+
+Format = 'utf-8'
+Disconnect_ms = "Discon"
+
+
+server1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# server2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# server3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+server1.bind(ChaosChess_Adresse)
+# server2.bind(TheFloorIsLava_Adresse)
+# server3.bind(QueensChess_Adresse)
+
+connections = 0
+
+Spieler1AmZug_Str = "Spieler1 ist am Zug"
+Spieler2AmZug_Str = "Spieler2 ist am Zug"
+
+notJet = "NJ"
+
+
+
+Spielbrett = []
+powerUpSpielbrett = []
+
+
+clientListe = []
+portListe = []
+
+
+
+
+def clients(con, adresse, QueensChessStatus, TheFloorIsLavaStatus, ChaosChessStatus):
+    global Spieler1AmZug
+    global Spieler2AmZug
+    global spielstandChanged
+    global count
+    global Spieler
+
+    count = 0
+    spielstandChanged = False
+    changed = False
+
+
+    Spieler1AmZug = True
+    Spieler2AmZug = False
+
+
+
+
+    verbunden = True
+
+    while verbunden:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        if QueensChessStatus:
+            if con == Spieler1 and Spieler2AmZug or con == Spieler2 and Spieler1AmZug:
+                ms_lenght = con.recv(Header).decode(Format)
+                ms_lenght = int(ms_lenght)
+                clientStatusAnfrage = con.recv(ms_lenght).decode(Format)
+                if clientStatusAnfrage == "Status":
+                    if spielstandChanged:
+                        send_to_client("SC", con)
+                    else:
+                        send_to_client("NSC", con)
+
+
+                if spielstandChanged:
+                    for a in range(len(Spielbrett)):
+                        for b in range(len(Spielbrett[a])):
+                            send_to_client(Spielbrett[a][b], con)
+                            if a == 7 and b == 7:
+                                if Spieler1AmZug:
+                                    send_to_client(Spieler2AmZug_Str, con)
+                                    Spieler1AmZug = not Spieler1AmZug
+                                    Spieler2AmZug = not Spieler2AmZug
+                                    print(f"{Spieler1AmZug} - Spieler 1")
+                                    print(f"{Spieler2AmZug} - Spieler 2")
+
+                                else:
+                                    send_to_client(Spieler1AmZug_Str, con)
+                                    Spieler1AmZug = not Spieler1AmZug
+                                    Spieler2AmZug = not Spieler2AmZug
+                                    print(f"{Spieler1AmZug} - Spieler 1")
+                                    print(f"{Spieler2AmZug} - Spieler 2")
+
+                                print("Nachricht wurde vom Client akzeptiert.")
+                                print(Spieler1AmZug, Spieler2AmZug)
+
+
+
+                if not spielstandChanged:
+                    for a in range(len(Spielbrett)):
+                        for b in range(len(Spielbrett[a])):
+                            send_to_client(Spielbrett[a][b], con)
+
+
+                if spielstandChanged:
+                    spielstandChanged = False
+                    print(f"{spielstandChanged} Spielstand wurde gechanged")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            if con == Spieler1 and Spieler1AmZug and not spielstandChanged or con == Spieler2 and Spieler2AmZug and not spielstandChanged:
+
+                ms_lenght = con.recv(Header).decode(Format)
+                ms_lenght = int(ms_lenght)
+                clientStatusAnfrage = con.recv(ms_lenght).decode(Format)
+
+
+
+
+                if clientStatusAnfrage == "Update":
+                    send_to_client("Update", con)
+                    for a in range(len(Spielbrett)):
+                        for b in range(len(Spielbrett[a])):
+                            send_to_client(Spielbrett[a][b], con)
+
+
+
+                if clientStatusAnfrage == "Übertragung":
+                    for a in range(len(Spielbrett)):
+                        for b in range(len(Spielbrett[a])):
+                            ms_lenght = con.recv(Header).decode(Format)
+                            ms_lenght = int(ms_lenght)
+                            ms_True = con.recv(ms_lenght).decode(Format)
+                            Spielbrett[a][b] = ms_True
+                            if a == 7 and b == 7:
+                                if con == Spieler1 and Spieler1AmZug:
+                                    send_to_client("Change", con)
+
+                                if con == Spieler2 and Spieler2AmZug:
+                                    send_to_client("Change", con)
+                                spielstandChanged = True
+                                print(f"Der {con} ist nun in der zwischen Phase")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# QueensChess ist fertig und Endet hier!
+        if TheFloorIsLavaStatus:
+            print("TheFloorIsLava-Chess erkannt")
+            if con == Spieler2 and Spieler1AmZug or con == Spieler1 and Spieler2AmZug:
+
+                for a in range(len(powerUpSpielbrett)):
+                    for b in range(len(powerUpSpielbrett[a])):
+                        send_to_client(powerUpSpielbrett[a][b], con)
+                        ms_lenght = con.recv(Header).decode(Format)
+                        ms_lenght = int(ms_lenght)
+                        ms_True = con.recv(ms_lenght).decode(Format)
+                        if ms_True == "Angekommen":
+                            print("Spielerdaten wurden geupdated")
+
+                print("PowerSpielbrett übertragen")
+
+                for a in range(len(Spielbrett)):
+                    for b in range(len(Spielbrett[a])):
+                        send_to_client(Spielbrett[a][b], con)
+                        ms_lenght = con.recv(Header).decode(Format)
+                        ms_lenght = int(ms_lenght)
+                        ms_True = con.recv(ms_lenght).decode(Format)
+                        if ms_True == "Angekommen":
+                            print("Spielerdaten wurden geupdated")
+                            if a == 7 and b == 7:
+                                if Spieler1AmZug:
+                                    send_to_client(Spieler1AmZug_Str, con)
+                                else:
+                                    send_to_client(Spieler2AmZug_Str, con)
+
+                print("Spielbrett wurde übertragen")
+
+                for a in range(len(powerUpSpielbrett)):
+                    for b in range(len(powerUpSpielbrett[a])):
+                        send_to_client(powerUpSpielbrett[a][b], con)
+                        ms_lenght = con.recv(Header).decode(Format)
+                        ms_lenght = int(ms_lenght)
+                        ms_True = con.recv(ms_lenght).decode(Format)
+                        if ms_True == "Angekommen":
+                            print("Spielerdaten wurden geupdated")
+
+                print("PowerSpielbrett übertragen")
+
+                for a in range(len(Spielbrett)):
+                    for b in range(len(Spielbrett[a])):
+                        send_to_client(Spielbrett[a][b], con)
+                        ms_lenght = con.recv(Header).decode(Format)
+                        ms_lenght = int(ms_lenght)
+                        ms_True = con.recv(ms_lenght).decode(Format)
+                        if ms_True == "Angekommen":
+                            print("Spielerdaten wurden geupdated")
+
+            if con == Spieler1 and Spieler1AmZug or con == Spieler2 and Spieler2AmZug:
+                if not updated:
+                    for a in range(len(Spielbrett)):
+                        for b in range(len(Spielbrett[a])):
+                            send_to_client(Spielbrett[a][b], con)
+                            ms_lenght = con.recv(Header).decode(Format)
+                            ms_lenght = int(ms_lenght)
+                            ms_True = con.recv(ms_lenght).decode(Format)
+                            if ms_True == "Angekommen":
+                                updated = True
+                                print("Spielerdaten wurden geupdated")
+
+
+                for a in range(len(powerUpSpielbrett)):
+                    for b in range(len(powerUpSpielbrett[a])):
+                        ms_lenght = con.recv(Header).decode(Format)
+                        ms_lenght = int(ms_lenght)
+                        ms_True = con.recv(ms_lenght).decode(Format)
+                        powerUpSpielbrett[a][b] = ms_True
+                        print(powerUpSpielbrett)
+
+
+                for a in range(len(Spielbrett)):
+                    for b in range(len(Spielbrett[a])):
+                        ms_lenght = con.recv(Header).decode(Format)
+                        ms_lenght = int(ms_lenght)
+                        ms_True = con.recv(ms_lenght).decode(Format)
+                        Spielbrett[a][b] = ms_True
+                        if a == 7 and b == 7:
+                            if con == Spieler1 and Spieler1AmZug:
+                                Spieler1AmZug = False
+                                Spieler2AmZug = True
+                                send_to_client("Change", con)
+                            if con == Spieler2 and Spieler2AmZug:
+                                Spieler1AmZug = True
+                                Spieler2AmZug = False
+                                send_to_client("Change", con)
+# TheFloorIsLava ist fertig und Endet hier!
+        if ChaosChessStatus:
+            print("ChaosChess erkannt")
+            if con == Spieler2 and Spieler1AmZug or con == Spieler1 and Spieler2AmZug:
+                for a in range(len(powerUpSpielbrett)):
+                    for b in range(len(powerUpSpielbrett[a])):
+                        send_to_client(powerUpSpielbrett[a][b], con)
+                        ms_lenght = con.recv(Header).decode(Format)
+                        ms_lenght = int(ms_lenght)
+                        ms_True = con.recv(ms_lenght).decode(Format)
+
+                print("PowerSpielbrett übertragen")
+                print("Übertragung des Spielbrettes beginnt")
+                for a in range(len(Spielbrett)):
+                    for b in range(len(Spielbrett[a])):
+                        send_to_client(Spielbrett[a][b], con)
+                        ms_lenght = con.recv(Header).decode(Format)
+                        ms_lenght = int(ms_lenght)
+                        ms_True = con.recv(ms_lenght).decode(Format)
+                        if ms_True == "Angekommen":
+                            print("Spielerdaten wurden geupdated")
+                            if a == 7 and b == 7:
+                                if Spieler1AmZug:
+                                    send_to_client(Spieler1AmZug_Str, con)
+                                else:
+                                    send_to_client(Spieler2AmZug_Str, con)
+                # Check
+
+                print("Spielbrett wurde übertragen")
+                for a in range(len(powerUpSpielbrett)):
+                    for b in range(len(powerUpSpielbrett[a])):
+                        send_to_client(powerUpSpielbrett[a][b], con)
+                        ms_lenght = con.recv(Header).decode(Format)
+                        ms_lenght = int(ms_lenght)
+                        ms_True = con.recv(ms_lenght).decode(Format)
+
+                # Check
+
+                print("PowerSpielbrett übertragen")
+                for a in range(len(Spielbrett)):
+                    for b in range(len(Spielbrett[a])):
+                        send_to_client(Spielbrett[a][b], con)
+                        ms_lenght = con.recv(Header).decode(Format)
+                        ms_lenght = int(ms_lenght)
+                        ms_True = con.recv(ms_lenght).decode(Format)
+
+
+
+
+                # Check
+                # Check
+
+            if con == Spieler1 and Spieler1AmZug or con == Spieler2 and Spieler2AmZug:
+
+                    # Update variable ist invalide
+
+                if not Spieler1updated and con == Spieler1:
+                    for a in range(len(Spielbrett)):
+                        for b in range(len(Spielbrett[a])):
+                            send_to_client(Spielbrett[a][b], con)
+                            ms_lenght = con.recv(Header).decode(Format)
+                            ms_lenght = int(ms_lenght)
+                            ms_True = con.recv(ms_lenght).decode(Format)
+                            if con == Spieler1:
+                                Spieler1updated = True
+                            if con == Spieler2:
+                                Spieler2updated = True
+
+
+                if not Spieler2updated and con == Spieler1:
+                    for a in range(len(Spielbrett)):
+                        for b in range(len(Spielbrett[a])):
+                            send_to_client(Spielbrett[a][b], con)
+                            ms_lenght = con.recv(Header).decode(Format)
+                            ms_lenght = int(ms_lenght)
+                            ms_True = con.recv(ms_lenght).decode(Format)
+                            if con == Spieler1:
+                                Spieler1updated = True
+                            if con == Spieler2:
+                                Spieler2updated = True
+
+                    # Update variable ist invalide
+
+                    print("Spielerdaten wurden geupdated")
+                # Check
+
+                for a in range(len(powerUpSpielbrett)):
+                    for b in range(len(powerUpSpielbrett[a])):
+                        ms_lenght = con.recv(Header).decode(Format)
+                        ms_lenght = int(ms_lenght)
+                        ms_True = con.recv(ms_lenght).decode(Format)
+                        powerUpSpielbrett[a][b] = ms_True
+                        print(powerUpSpielbrett)
+
+
+                for a in range(len(Spielbrett)):
+                    for b in range(len(Spielbrett[a])):
+                        ms_lenght = con.recv(Header).decode(Format)
+                        ms_lenght = int(ms_lenght)
+                        ms_True = con.recv(ms_lenght).decode(Format)
+                        Spielbrett[a][b] = ms_True
+                        if a == 7 and b == 7:
+                            if con == Spieler1 and Spieler1AmZug:
+                                Spieler1AmZug = False
+                                Spieler2AmZug = True
+                                send_to_client("Change", con)
+                            if con == Spieler2 and Spieler2AmZug:
+                                Spieler1AmZug = True
+                                Spieler2AmZug = False
+                                send_to_client("Change", con)
+                            count += 1
+# ChaosChess ist fertig und Endet hier!
+
+def send_to_client(ms, con):
+    # Nachricht wird in Bit übersetzt
+    Ms = ms.encode(Format)
+    # Die Länge der Nachricht wird abgespeichert
+    Ms_lenght = len(Ms)
+    # Die Nachricht mit der Länge der Eigentlichen Nachricht wird in Bit übersetzt
+    Längenübertragung = str(Ms_lenght).encode(Format)
+    # Die Länge der "Längennachricht" wird vom Header abgezogen,
+    # und die Fehlenden Stellen werden durch Leerzeichen aufgefüllt
+    Längenübertragung += b' ' * (Header - len(Längenübertragung))
+    # Die Information über die Läng der Nachricht wird gesendet [Mx 64 Stellen(Header)]
+    con.send(Längenübertragung)
+    # Die Eigentliche Nachricht wird gesendet.
+    con.send(Ms)
+
+def start():
+    global Spielbrett
+    global powerUpSpielbrett
+    global Spieler
+
+    Spielbrett = game.spielbrett
+    powerUpSpielbrett = game.powerUpSpielbrett
+    global Spieler1
+    global Spieler2
+
+    Spieler1 = ""
+    Spieler2 = ""
+
+    server1.listen()
+
+    print(Server)
+    Spieler = 0
+    print(Spielbrett)
+    QueensChessStatus = False
+    TheFloorIsLavaStatus = False
+    ChaosChessStatus = False
+
+
+    while True:
+        con, adresse = server1.accept()
+        Spieler += 1
+
+        if Spieler == 1:
+            send_to_client("Du bist Spieler 1", con)
+            Spieler1 = con
+            print(f"Der Nutzer: {adresse[0]} wurde darüber informiert das er Spieler 1 ist")
+
+            ms_lenght = con.recv(Header).decode(Format)
+            ms_lenght = int(ms_lenght)
+            ms_True = con.recv(ms_lenght).decode(Format)
+            if ms_True == "QueensChess":
+                Spielbrett = game.QueensChessSpielbrett
+                QueensChessStatus = True
+                ChaosChessStatus = False
+                TheFloorIsLavaStatus = False
+
+
+            if ms_True == "TheFloorIsLava":
+                Spielbrett = game.spielbrett
+                TheFloorIsLavaStatus = True
+                ChaosChessStatus = False
+                QueensChessStatus = False
+
+            if ms_True == "ChaosChess":
+                Spielbrett = game.spielbrett
+                ChaosChessStatus = True
+                TheFloorIsLavaStatus = False
+                QueensChessStatus = False
+
+        elif Spieler == 2:
+            send_to_client("Du bist Spieler 2", con)
+            Spieler2 = con
+            print(f"Der Nutzer: {adresse[0]} wurde darüber informiert das er Spieler 2 ist")
+
+            ms_lenght = con.recv(Header).decode(Format)
+            ms_lenght = int(ms_lenght)
+            ms_True = con.recv(ms_lenght).decode(Format)
+            if ms_True == "QueensChess":
+                Spielbrett = game.QueensChessSpielbrett
+                QueensChessStatus = True
+                ChaosChessStatus = False
+                TheFloorIsLavaStatus = False
+
+            if ms_True == "TheFloorIsLava":
+                Spielbrett = game.spielbrett
+                TheFloorIsLavaStatus = True
+                ChaosChessStatus = False
+                QueensChessStatus = False
+
+            if ms_True == "ChaosChess":
+                Spielbrett = game.spielbrett
+                ChaosChessStatus = True
+                TheFloorIsLavaStatus = False
+                QueensChessStatus = False
+        clientListe.append(con)
+        portListe.append(adresse)
+        print(f"Der Nutzer mit der IPv4-Adresse: {adresse[0]} hat sich mit dem Server über den Port: {ChaosChess_Port} verbunden.")
+        print("Willkommen Nutzer")
+
+
+        print(clientListe)
+
+        # con2, adresse2 = server2.accept()
+        # con3, adresse3 = server3.accept()
+
+        thread = threading.Thread(target=clients, args=(con, adresse, QueensChessStatus, TheFloorIsLavaStatus
+                                                        , ChaosChessStatus))
+        # thread = threading.Thread(target=clients, args=(con2, adresse2))
+        # thread = threading.Thread(target=clients, args=(con3, adresse3))
+
+        thread.start()
+        print(Server)
+
+game = Game()
+start()
