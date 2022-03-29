@@ -440,6 +440,31 @@ def ChaosChess(Bild, Spiel):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             # Giver
 
         if IchBin == "Spieler1" and Spieler1AmZug or IchBin == "Spieler2" and Spieler2AmZug:
@@ -912,40 +937,6 @@ def ChaosChess(Bild, Spiel):
 
         gamesaufbau(Bild=Bild, Spiel=Spiel)
         pygame.display.update()
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
 
 def QueensChess(Bild, Spiel):
     global startspalte, startzeile
@@ -970,7 +961,7 @@ def QueensChess(Bild, Spiel):
     Spieler1AmZug = True
     Spieler2AmZug = False
 
-    IchBin= ""
+    IchBin = ""
 
     Eigenerspieler.connect(Server=Server)
 
@@ -979,10 +970,12 @@ def QueensChess(Bild, Spiel):
         IchBin = "Spieler1"
         Spiel.weisZug = True
         Eigenerspieler.ubertragung("QueensChess")
+        print(f"Ich bin {IchBin}")
     elif werBinIch == "Du bist Spieler 2":
         IchBin = "Spieler2"
         Spiel.weisZug = False
         Eigenerspieler.ubertragung("QueensChess")
+        print(f"Ich bin {IchBin}")
 
 
 
@@ -993,6 +986,12 @@ def QueensChess(Bild, Spiel):
         Bild.fill(Weiß)
         gamesaufbau(Bild=Bild, Spiel=Spiel)
         pygame.display.update()
+
+
+        if IchBin == "Spieler1":
+            Spiel.weisZug = True
+        elif IchBin == "Spieler2":
+            Spiel.weisZug = False
 
 
 
@@ -1021,20 +1020,29 @@ def QueensChess(Bild, Spiel):
 # Reciever
 
         if IchBin == "Spieler1" and Spieler2AmZug or IchBin == "Spieler2" and Spieler1AmZug:
+            gamesaufbau(Bild=Bild, Spiel=Spiel)
+            pygame.display.update()
+
             for Eingabe in pygame.event.get():
                 if Eingabe.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
+            try:
 
+                Eigenerspieler.ubertragung("Status")
+                antwort = Eigenerspieler.server_reply()
+            except:
+                antwort = "NSC"
 
-            if Eigenerspieler.server_reply() == "SC":
+            print(antwort)
+
+            if antwort == "SC":
                 for a in range(len(Spiel.spielbrett)):
                     for b in range(len(Spiel.spielbrett[a])):
                         Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
-                        Eigenerspieler.ubertragung("Angekommen")
                         Bild.fill(Weiß)
-                        gamesaufbau(Bild=Bild, Spiel=Spiel)
-                        pygame.display.update()
+
+                        print(a, b)
                         if a == 7 and b == 7:
                             momentanerSpieler = Eigenerspieler.server_reply()
                             print(momentanerSpieler)
@@ -1045,20 +1053,22 @@ def QueensChess(Bild, Spiel):
                                 Spieler1AmZug = False
                                 Spieler2AmZug = True
 
-                for a in range(len(Spiel.spielbrett)):
-                    for b in range(len(Spiel.spielbrett[a])):
-                        Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
-                        Eigenerspieler.ubertragung("Angekommen")
 
-            elif Eigenerspieler.server_reply() == "NSC":
+
+
+
+            if antwort == "NSC":
                 for a in range(len(Spiel.spielbrett)):
                     for b in range(len(Spiel.spielbrett[a])):
                         Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
-                        Eigenerspieler.ubertragung("Angekommen")
-                for a in range(len(Spiel.spielbrett)):
-                    for b in range(len(Spiel.spielbrett[a])):
-                        Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
-                        Eigenerspieler.ubertragung("Angekommen")
+
+
+
+
+
+
+
+
 
 
 
@@ -1079,118 +1089,91 @@ def QueensChess(Bild, Spiel):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Spieler
 
 
         if IchBin == "Spieler1" and Spieler1AmZug or IchBin == "Spieler2" and Spieler2AmZug:
 
-
-            for a in range(len(Spiel.spielbrett)):
-                for b in range(len(Spiel.spielbrett[a])):
-                    Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
-                    Eigenerspieler.ubertragung("Angekommen")
+            Eigenerspieler.ubertragung("Update")
+            print("Update wurde angefragt")
+            antwort = Eigenerspieler.server_reply()
 
 
+            if antwort == "Update":
+                print("Update startet")
+                for a in range(len(Spiel.spielbrett)):
+                    for b in range(len(Spiel.spielbrett[a])):
+                        Spiel.spielbrett[a][b] = Eigenerspieler.server_reply()
+
+            Eigenerspieler.ubertragung("Übertragung")
+            gamesaufbau(Bild=Bild, Spiel=Spiel)
+            pygame.display.update()
 
 
+
+
+            Changed = False
 
             print("Ich bin am Zug!")
+
+
+
+
             if IchBin == "Spieler1":
                 Spiel.weisZug = True
             elif IchBin == "Spieler2":
                 Spiel.weisZug = False
-
             verfügbareZüge = Spiel.machbareZüge()
-            print(verfügbareZüge)
-
-            for Eingabe in pygame.event.get():
-                mausposition = pygame.mouse.get_pos()
-                if Eingabe.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                if Eingabe.type == pygame.MOUSEBUTTONDOWN:
+            while not Changed:
+                for Eingabe in pygame.event.get():
                     mausposition = pygame.mouse.get_pos()
-                    zeile = mausposition[0] // spielebutton
-                    spalte = mausposition[1] // spielebutton
-                    if zeile > 7 or spalte > 7:
-                        break
-                    #print(verfügbareZüge)
-                    if ausgewählterbutton == (zeile, spalte):
-                        ausgewählterbutton = ()
-                        spielerclick = []
-                    else:
-                        ausgewählterbutton = (zeile, spalte)
-                        spielerclick.append(ausgewählterbutton)
-                    if len(spielerclick) == 2:
-                        move = figurenBewegung(spielerclick[0], spielerclick[1], Spiel.spielbrett)
-                        if move.figurBewegungID in verfügbareZüge:
-                            Spiel.Move(move)
-                            BauerInFigur(Spiel=Spiel, spielerclick=spielerclick[1], Bild=Bild, font=getFont(10))
-                            Spiel.runde += 1
-                            print("Gamestate wird übertragen")
-
-                            for a in range(len(Spiel.spielbrett)):
-                                for b in range(len(Spiel.spielbrett[a])):
-                                    Eigenerspieler.ubertragung(ms=Spiel.spielbrett[a][b])
-                                    if a == 7 and b == 7:
-                                        message = Eigenerspieler.server_reply()
-                                        if message == "Change":
-                                            Spieler1AmZug = not Spieler1AmZug
-                                            Spieler2AmZug = not Spieler2AmZug
-                                            print("Spielende Spieler wurde gechanged")
+                    if Eingabe.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+                    if Eingabe.type == pygame.MOUSEBUTTONDOWN:
+                        mausposition = pygame.mouse.get_pos()
+                        zeile = mausposition[0] // spielebutton
+                        spalte = mausposition[1] // spielebutton
+                        if zeile > 7 or spalte > 7:
+                            break
+                        # print(verfügbareZüge)
+                        if ausgewählterbutton == (zeile, spalte):
                             ausgewählterbutton = ()
                             spielerclick = []
-                        print(Spiel.runde)
-                        updated = False
+                        else:
+                            ausgewählterbutton = (zeile, spalte)
+                            spielerclick.append(ausgewählterbutton)
+                        if len(spielerclick) == 2:
+                            if IchBin == "Spieler1":
+                                Spiel.weisZug = True
+                            elif IchBin == "Spieler2":
+                                Spiel.weisZug = False
+                            move = figurenBewegung(spielerclick[0], spielerclick[1], Spiel.spielbrett)
+                            if move.figurBewegungID in verfügbareZüge:
+                                Spiel.Move(move)
+                                BauerInFigur(Spiel=Spiel, spielerclick=spielerclick[1], Bild=Bild, font=getFont(10))
+                                Spiel.runde += 1
+                                print("Gamestate wird übertragen")
+                                for a in range(len(Spiel.spielbrett)):
+                                    for b in range(len(Spiel.spielbrett[a])):
+                                        Eigenerspieler.ubertragung(ms=Spiel.spielbrett[a][b])
+                                        if a == 7 and b == 7:
+                                            message = Eigenerspieler.server_reply()
+                                            print(message)
+                                            if message == "Change":
+                                                Spieler1AmZug = not Spieler1AmZug
+                                                Spieler2AmZug = not Spieler2AmZug
+                                                print("Spielende Spieler wurde gechanged")
+                                                Changed = True
+                            ausgewählterbutton = ()
+                            spielerclick = []
+                            print(Spiel.runde)
+                            updated = False
+            pygame.display.update()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        gamesaufbau(Bild=Bild, Spiel=Spiel)
         pygame.display.update()
+
 
 
 
