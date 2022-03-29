@@ -1,12 +1,54 @@
 import socket
 
-HEADER = 64
-PORT = 5050
-FORMAT = 'utf-8'
-GETRENNT_NACHRICHT = "!GETRENNT"
-SERVER = socket.gethostbyname(socket.gethostname())
-ADRESSE = (SERVER, PORT)
+
+class client():
+    def __init__(self):
+
+        self.Header = 64
+        self.Port = 5050
+
+        self.Format = 'utf-8'
+        self.Disconnect_ms = "Discon"
+
+        self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 
-client = socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(ADRESSE)
+        self.erstverbindung = True
+
+
+    def connect(self, Server):
+
+        self.Server = Server
+        self.Adresse = (self.Server, self.Port)
+        self.client.connect(self.Adresse)
+
+    def ubertragung(self, ms):
+        Ms = ms.encode(self.Format)
+        Ms_lenght = len(Ms)
+        lenght = str(Ms_lenght).encode(self.Format)
+        lenght += b' ' * (self.Header - len(lenght))
+        self.client.send(lenght)
+        self.client.send(Ms)
+
+    def server_reply(self):
+        print("Client wartet auf Nachricht")
+        Nachrichtlenght = self.client.recv(self.Header).decode(self.Format)
+
+        ms_True = ""
+        if Nachrichtlenght:
+            ms_lenght = int(Nachrichtlenght)
+            ms_True = self.client.recv(ms_lenght).decode(self.Format)
+            print(f"{ms_True} : Hat der Server geantwortet")
+            return ms_True
+
+    def closeConnection(self):
+        self.client.close()
+
+
+
+
+
+
+
+
+
