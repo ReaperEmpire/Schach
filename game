@@ -404,7 +404,16 @@ class Game:
                 if self.spielbrett[self.endSpalte][self.endZeile][0] != self.spielbrett[r][c][0] or self.spielbrett[self.endSpalte][self.endZeile] in self.powerUps:
                     self.verfügbarerZug = self.startSpalte * 1000 + self.startZeile * 100 + self.endSpalte * 10 + self.endZeile
                     moves.append(self.verfügbarerZug)
-
+    
+    def rochade(self, r, c):
+    self.startSpalte = r
+    self.startZeile = c
+    global spielbrett
+    for c in r:
+        temp = self.spielbrett[r]
+        self.spielbrett[r] = self.spielbrett[c]
+        self.spielbrett[c] = temp
+        
 # PowerUps
     def powerUpDetected(self):
         pass
